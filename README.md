@@ -1,11 +1,13 @@
-ultraimport -  Stable Python Imports
+ultraimport -  Stable, File-Based Python Imports
 ------------------------------------
 
-Python import system is not based on files. It's based on packages and modules, on directories and a lot of magic.
+Python's default import system is not based on files.
+It's based on packages and modules, on directories, underscores and a lot of magic.
 
-`ultraimport` gives you stable imports no matter how you run your code. `ultraimport` will always find and import the same code files.
+`ultraimport` gives you stable, reliable, repeatable imports -- no matter how you run your code.
+`ultraimport` will always find and import the same code files.
 
-** Warning: This is an early hack. No unit tests exist. Maybe not stable! **
+**Warning: This is an early hack. No unit tests exist. Maybe not stable!**
 
 The Issue (with Classic Python Imports)
 ---------------------------------------
@@ -16,27 +18,14 @@ programs because it has some useful functions.
 
 The directory looks like this:
 ```shell
-$ ls
+$ ls myprogram/
 __init__.py  log.py  __pycache__  run.py
 ```
 
-Python code can be executed in a number of different ways.
-
-```shell
-python /home/user/myprogram/run.py
-cd /home/user/
-python -c 'import myprogram.run'
-python ./mypackage/mymodule.py
-python -m mypackage.mymodule
-cd mypackage
-python -c 'import mymodule'
-python -m mymodule
-python ./mymodule.py
-```
-
 The program looks like this:
-
 ```python
+#!/usr/bin/env python3
+
 from .log import logger
 
 def main():
@@ -62,44 +51,80 @@ Traceback (most recent call last):
 ImportError: attempted relative import with no known parent package
 ```
 
-The error **ImportError: attempted relative import with no known parent package** is rather erratic and wrong. There is
-a known parent package. It's the directory where the code lives in. Without any code changes you can do
+Python code can be executed in a number of different ways:
+```shell
+# Broken
+python ~/myprogram/run.py
 
+# Works
+cd ~
+python -c 'import myprogram.run'
+
+# Broken
+python ./myprogram/run.py
+
+# Works
+python -m myprogram.run
+
+# Broken
+cd myprogram
+python -c 'import run'
+
+# Broken
+python -m run
+
+# Broken
+python ./run.py
+
+# Broken
+/home/ronny/Projects/myprogram/run.py
 ```
-$ cd ..
-$ python -m myprogram.run
-I did something
-```
+
+Why does it sometimes work and sometimes not?
+
+The error ***ImportError: attempted relative import with no known parent package*** is rather erratic and wrong.
+There actually is a known parent package. It's the directory where the code lives in. Sometimes Python can see it.
+Often not.
 
 The Solution: ultraimport
 -------------------------
 
 So how can we make our code always work independent of how you run it?
 
-We could rewrite the code to do a so called absolute import (they're not really absolute) but that would create a risk of not
-importing the right log module, depending on the directory list of `sys.path`.
+We could rewrite the code to do a so called absolute import (they're actually not really absolute) but that would create
+a risk of not importing the right log module, depending on the directory list in `sys.path`.
 
 Though, we do have a safe information we can rely on: The `log.py` module lives next to us in the same directory.
-There was just no way to tell Python to load it from there. 
+There was just no way to tell Python to load it from there.
 
 `ultraimport` can do this.
 
 With ultraimport your program will look like this:
-
 ```python
 #!/usr/bin/env python3
 
 import ultraimport
 
-ultraimport('log.py', 'logger')
+# From now on, we can do file based imports as long as we know the file name.
+#
+# `__dir__` refers to the parent directory of the file that the calling function is in.
+# You could also construct a path realtive to the current working yourself using
+# `pathlib.Path(__file__).parent` or relative to your current working directory by using `./log.py`
+#
+# The logger object will be imported from log.py and it will be added to the globals.
+ultraimport('__dir__/log.py', 'logger', globals=globals())
+
+# Example of importing two functions from the cache module and assinging aliasses to them.
+store, load = ultraimport('__dir__/cache.py', ('store', 'load'))
 
 def main():
     # do something
 
     logger('I did something')
 
-if __name__ == 'main':
+if __name__ == '__main__':
     main()
+
 ```
 
 As you can see, you'll have to import ultraimport in the classical way. It's intended to be installed as a system-wide library.

@@ -15,10 +15,10 @@ def ultraimport(file_path, map_to_globals = None, globals=None):
         file_path = pathlib.Path(file_path)
 
     if not file_path.exists():
-        raise ImportError(f"{file_path} does not exist")
+        raise ImportError(f"'{file_path}' does not exist (resolved path: '{file_path.resolve()}')")
 
     name = fix_name(file_path)
-    loader = importlib.machinery.SourceFileLoader(name, str(file_path.absolute()))
+    loader = importlib.machinery.SourceFileLoader(name, str(file_path.resolve()))
     spec = importlib.util.spec_from_loader(name, loader)
     module = importlib.util.module_from_spec(spec)
     sys.modules[name] = module
