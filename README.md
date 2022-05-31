@@ -1,28 +1,68 @@
-ultraimport -  Stable, File-Based Python Imports
-------------------------------------
-
-Python's default import system is not based on files.
-It's based on packages and modules, on directories, underscores and a lot of magic.
+ultraimport -  Stable, File-based Python Imports
+------------------------------------------------
 
 `ultraimport` gives you stable, reliable, repeatable imports -- no matter how you run your code.
-`ultraimport` will always find and import the same code files.
+
+**Features**:
+
+- import any file from the file system as Python code
+- reliable relative imports
+- re-import the same as often as you want
 
 **Warning: This is an early hack. No unit tests exist. Maybe not stable!**
 
-The Issue (with Classic Python Imports)
----------------------------------------
+Installation
+------------
 
-Let's assume you have created a small Python program called `run.py`. It lives together with a small
-module `log.py` in the same directory call `myprogram`. Sometimes, you also import run.py in other
-programs because it has some useful functions.
-
-The directory looks like this:
 ```shell
-$ ls myprogram/
-__init__.py  log.py  __pycache__  run.py
+pip install ultraimport
 ```
 
-The program looks like this:
+```
+git clone https://github.com/ronny-rentner/ultraimport.git
+pip install -e ./ultraimport
+```
+
+How To Use?
+-----------
+
+Let's assume your program folder looks like this:
+```shell
+$ ls myprogram/
+__init__.py
+cache.py
+log.py
+run.py
+```
+
+run.py:
+```python
+#!/usr/bin/env python3
+
+import ultraimport
+
+# `__dir__` refers to the directory where log.py is in
+ultraimport('__dir__/log.py', 'logger', globals=globals())
+
+# Alias objects after import
+store, load = ultraimport('__dir__/cache.py', ('store', 'load'))
+
+def main():
+    # do something
+
+    logger('I did something')
+
+if __name__ == '__main__':
+    main()
+```
+
+Now, no matter how you call run.py, it will always find log.py.
+
+
+The Issue With Python Imports
+-----------------------------
+
+Classically, to do a relative import, your run.py would look like this:
 ```python
 #!/usr/bin/env python3
 
@@ -37,11 +77,7 @@ if __name__ == 'main':
     main()
 ```
 
-This is just a demo. The program does not do anything apart from printing a log message through a log module helper that lives next
-to the program in the same directly. As `log` is a very common name, it's better to do an explicit, relative import to make sure
-we're actually importing the right log module that belongs to use and not some other log module from somewhere in the `sys.path`
-
-If you try to run the program, you'll get an error message:
+If you try to run the program in the *wrong* way, you'll get an error message:
 
 ```shell
 $ python ./run.py
@@ -60,9 +96,6 @@ python ~/myprogram/run.py
 cd ~
 python -c 'import myprogram.run'
 
-# Broken
-python ./myprogram/run.py
-
 # Works
 python -m myprogram.run
 
@@ -80,42 +113,23 @@ python ./run.py
 /home/ronny/Projects/myprogram/run.py
 ```
 
-Why does it sometimes work and sometimes not?
+The error ***ImportError: attempted relative import with no known parent package***
+is rather erratic because the code has never changed.
 
-The error ***ImportError: attempted relative import with no known parent package*** is rather erratic and wrong.
-There actually is a known parent package. It's the directory where the code lives in. Sometimes Python can see it.
-Often not.
+There actually is a known parent package. It's the directory where the code lives in.
+Sometimes Python can see it, sometimes not.
 
 The Solution: ultraimport
 -------------------------
 
-So how can we make our code always work independent of how you run it?
+With ultraimport your program will always find log.py, no matter how you run it.
 
-We could rewrite the code to do a so called absolute import (they're actually not really absolute) but that would create
-a risk of not importing the right log module, depending on the directory list in `sys.path`.
-
-Though, we do have a safe information we can rely on: The `log.py` module lives next to us in the same directory.
-There was just no way to tell Python to load it from there.
-
-`ultraimport` can do this.
-
-With ultraimport your program will look like this:
 ```python
 #!/usr/bin/env python3
 
 import ultraimport
 
-# From now on, we can do file based imports as long as we know the file name.
-#
-# `__dir__` refers to the parent directory of the file that the calling function is in.
-# You could also construct a path realtive to the current working yourself using
-# `pathlib.Path(__file__).parent` or relative to your current working directory by using `./log.py`
-#
-# The logger object will be imported from log.py and it will be added to the globals.
 ultraimport('__dir__/log.py', 'logger', globals=globals())
-
-# Example of importing two functions from the cache module and assinging aliasses to them.
-store, load = ultraimport('__dir__/cache.py', ('store', 'load'))
 
 def main():
     # do something
@@ -130,18 +144,21 @@ if __name__ == '__main__':
 As you can see, you'll have to import ultraimport in the classical way. It's intended to be installed as a system-wide library.
 Afterwards, you can import your own code based on relative or absolute file system paths so it can always be found.
 
+## Parameters
 
-**Features**:
+`def ultraimport(file_path, objects_to_import = None, globals=None, caller=None, use_cache=True)`
 
-- import any file as Python code, no matter what the extension is
-- imports always import the same files no matter how
+`file_path`: path to a file to import, ie. *'my_lib.py'*. It can have any file extension. Please be aware that you must provide the file extension.
+The path can be relative or absolute. You can use the special string `__dir__` to refer to the director of the caller which will be derived
+via inspetions. If you use advanced debugging tools you might have to set `caller=__file__`.
 
+`objects_to_import`: provide name of single object or the value `'*'` or an iterable of object names to import from file_path.
 
-License
--------
+`globals`: add the `objects_to_import` to the dict provided. Usually called with `gloabls=globals()` if you want the imported module
+to be added to the globals of the caller.
 
-This project is Copyright (c) Ronny Rentner and licensed under
-the terms of the GNU GPL v3+ license.
+`use_cache`: if set to false, allow re-importing of the same source file even if it was cached before.
+
 
 Contributing
 ------------
