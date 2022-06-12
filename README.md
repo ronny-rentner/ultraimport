@@ -6,7 +6,6 @@ ultraimport -  File-based Python Imports
 **Features**:
 
 - import any file from the file system as Python code
-- reliable relative or absolute imports
 - preprocess code for optimizations
 - re-import the same file as often as you want
 - lazy loading (lazy imports for modules and callables)
@@ -32,6 +31,8 @@ pip install -e ./ultraimport
 
 How To Use?
 -----------
+
+*Note: You can find this example in the [examples](/examples) folder.*
 
 Let's assume a folder `~/myprogram` looks like this:
 ```shell
