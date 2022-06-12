@@ -1,9 +1,20 @@
-data = {}
+data = []
 
-def store(key, value):
-    logger('store', key, value)
-    data[key] = value
+import ultraimport
 
-def load(key):
-    logger('load', key)
-    return data[key]
+logger = ultraimport('__dir__/log.py', {'logger': callable})
+
+def store(value):
+    if not value.startswith('cache'):
+        logger('cache store: ' + value)
+    data.append(value)
+
+def load(value):
+    if value in data:
+        if not value.startswith('cache'):
+            logger('cache load: ' + value)
+
+        return value
+    else:
+        return None
+
