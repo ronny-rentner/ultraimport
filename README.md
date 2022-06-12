@@ -10,6 +10,7 @@ ultraimport -  File-based Python Imports
 - preprocess code for optimizations
 - re-import the same file as often as you want
 - lazy loading (lazy imports for modules and callables)
+- fix circular imports through lazy imports
 - fix the error: `ImportError: attempted relative import with no known parent package`
 - fix the error: `ValueError: attempted relative import beyond top-level package`
 
