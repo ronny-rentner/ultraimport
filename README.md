@@ -1,23 +1,25 @@
-ultraimport -  Stable, File-based Python Imports
-------------------------------------------------
+ultraimport -  File-based Python Imports
+----------------------------------------
 
-`ultraimport` gives you stable, reliable, repeatable imports -- no matter how you run your code.
+`ultraimport` gives you stable and reliable imports -- no matter how you run your code.
 
 **Features**:
 
 - import any file from the file system as Python code
-- reliable relative imports
-- re-import the same as often as you want
+- reliable, relative imports
+- re-import the same file as often as you want
 
 **Warning: This is an early hack. No unit tests exist. Maybe not stable!**
 
 Installation
 ------------
 
+Install system wide:
 ```shell
 pip install ultraimport
 ```
 
+Install a local development version:
 ```
 git clone https://github.com/ronny-rentner/ultraimport.git
 pip install -e ./ultraimport
@@ -26,9 +28,8 @@ pip install -e ./ultraimport
 How To Use?
 -----------
 
-Let's assume your program folder looks like this:
+Let's assume a folder `~/myprogram` looks like this:
 ```shell
-$ ls myprogram/
 __init__.py
 cache.py
 log.py
@@ -41,7 +42,7 @@ run.py:
 
 import ultraimport
 
-# `__dir__` refers to the directory where log.py is in
+# `__dir__` refers to the directory where run.py is in
 ultraimport('__dir__/log.py', 'logger', globals=globals())
 
 # Alias objects after import
@@ -54,13 +55,15 @@ def main():
 
 if __name__ == '__main__':
     main()
+else:
+    logger('I have been imported')
 ```
 
 Now, no matter how you call run.py, it will always find log.py.
 
 
-The Issue With Python Imports
------------------------------
+The Issue: Python Inconsistency
+-------------------------------
 
 Classically, to do a relative import, your run.py would look like this:
 ```python
@@ -77,7 +80,7 @@ if __name__ == 'main':
     main()
 ```
 
-If you try to run the program in the *wrong* way, you'll get an error message:
+If you try to run the program in usual way, you'll get an error message:
 
 ```shell
 $ python ./run.py
@@ -100,7 +103,7 @@ python -c 'import myprogram.run'
 python -m myprogram.run
 
 # Broken
-cd myprogram
+cd ~/myprogram
 python -c 'import run'
 
 # Broken
@@ -110,7 +113,7 @@ python -m run
 python ./run.py
 
 # Broken
-/home/ronny/Projects/myprogram/run.py
+~/myprogram/run.py
 ```
 
 The error ***ImportError: attempted relative import with no known parent package***
@@ -119,10 +122,12 @@ is rather erratic because the code has never changed.
 There actually is a known parent package. It's the directory where the code lives in.
 Sometimes Python can see it, sometimes not.
 
-The Solution: ultraimport
--------------------------
+Even if there was no parent package, what's the issue with importing a module that
+I only know from its relative position to my current module?
 
-With ultraimport your program will always find log.py, no matter how you run it.
+## The Solution: ultraimport
+
+With ultraimport your program `run.py` will always find `log.py`, no matter how you run it.
 
 ```python
 #!/usr/bin/env python3
@@ -144,6 +149,32 @@ if __name__ == '__main__':
 As you can see, you'll have to import ultraimport in the classical way. It's intended to be installed as a system-wide library.
 Afterwards, you can import your own code based on relative or absolute file system paths so it can always be found.
 
+Python code can be executed in a number of different ways:
+```shell
+# Works
+python ~/myprogram/run.py
+
+# Works
+cd ~
+python -c 'import myprogram.run'
+
+# Works
+python -m myprogram.run
+
+# Works
+cd ~/myprogram
+python -c 'import run'
+
+# Works
+python -m run
+
+# Works
+python ./run.py
+
+# Works
+~/myprogram/run.py
+```
+
 ## Parameters
 
 `def ultraimport(file_path, objects_to_import = None, globals=None, caller=None, use_cache=True)`
@@ -160,8 +191,7 @@ to be added to the globals of the caller.
 `use_cache`: if set to false, allow re-importing of the same source file even if it was cached before.
 
 
-Contributing
-------------
+## Contributing
 
 We love contributions! ultraimport is open source,
 built on open source, and we'd love to have you hang out in our community.
