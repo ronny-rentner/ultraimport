@@ -57,28 +57,48 @@ class LazyModule(types.ModuleType):
 class UltraSourceFileLoader(importlib.machinery.SourceFileLoader):
 
     def __init__(self, name, file_path, preprocessor = None):
-        self.preprocessor = preprocessor
         super().__init__(name, file_path)
+        self.preprocessor = preprocessor
+        if self.preprocessor:
+            self.check_preprocess(file_path)
+
+    def check_preprocess(self, file_path):
+        #print('check_preprocess', file_path)
+
+        self.preprocess_file_path = file_path[:-3] + '__preprocessed__.py'
+
+        if os.path.exists(self.preprocess_file_path):
+            preprocessed = os.stat(self.preprocess_file_path)
+            original = os.stat(file_path)
+            if original.st_mtime > preprocessed.st_mtime:
+                self.preprocess(file_path)
+        else:
+            self.preprocess(file_path)
+
+    def preprocess(self, file_path):
+        #print('preprocess', file_path)
+        code = self.get_data(file_path)
+        code = self.preprocessor(code)
+        # Write processed code back for caching
+        with open(self.preprocess_file_path, 'wb') as f:
+            f.write(code)
+        #os.utime(self.preprocess_file_path, (original['mtime'], original['mtime']))
 
     def is_bytecode(self, file_path):
         return file_path[file_path.rindex("."):] in importlib.machinery.BYTECODE_SUFFIXES
 
-    def path_stats(self, path):
-        # We need to raise here to invalidate any bytecode cache
-        raise OSError
-        #return { 'mtime': 999 , 'size': None }
-        return super().path_stats(path)
+    #def path_stats(self, path):
+        #raise OSError
 
-    def get_source(self, path):
-        #print('get_source', path)
-        return super().get_source(path)
+    #def get_data(self, path):
+    #    print('get_data', path, self.path)
+    #    return super().get_data(path)
 
-    def get_data(self, path):
-        #print('get_data', path)
-        code = super().get_data(path)
-        if not self.is_bytecode(path) and self.preprocessor:
-            code = self.preprocessor(code)
-        return code
+    def get_filename(self, fullname):
+        #print('get_filename', fullname, self.path)
+        if self.preprocessor:
+            return self.path[:-3] + '__preprocessed__.py'
+        return self.path
 
 def get_name(file_path):
     base_name = os.path.basename(file_path)
@@ -138,8 +158,8 @@ def ultraimport(file_path, objects_to_import = None, globals=None, preprocessor=
         if use_cache and file_path in cache:
             module = cache[file_path]
         else:
-            if not os.path.exists(file_path):
-                raise ImportError(f"'{file_path}' does not exist (resolved path: '{os.path.abspath(file_path)}')")
+            #if not os.path.exists(file_path):
+            #    raise ImportError(f"'{file_path}' does not exist (resolved path: '{os.path.abspath(file_path)}')")
 
             name = get_name(file_path)
             #file_path = os.path.abspath(file_path)

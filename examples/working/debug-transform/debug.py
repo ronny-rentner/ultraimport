@@ -3,8 +3,6 @@ import logging as log
 import os, dis, timeit
 
 DEBUG=False if os.environ.get('DEBUG', "0") in ['0', 'no', 'off', 'false', 'False'] else True
-print('DEBUG:', DEBUG)
-
 # If the DEBUG flag is set, we print our debug log messages.
 if DEBUG:
     log.basicConfig(level=log.DEBUG)
@@ -15,8 +13,8 @@ else:
 # Simulate expensive calculation result
 def expensive_calculation():
     import time
-    print('expensive calcualtion: sleeping 3 seconds now')
-    time.sleep(3)
+    print('Simulating expensive calculation: sleeping 1 second now')
+    time.sleep(1)
     return 'expensive'
 
 # Classical approach how to optimize your debug prints when
@@ -26,7 +24,7 @@ def my_log(*args):
         message = args[0]
         # Do the expensive calls only if DEBUG is actually turned on
         args = [arg() for arg in args[1:] if callable(arg)]
-        log.debug(message, args)
+        log.debug(message, *args)
 
 def third():
     # This is fast but ugly. You have to pollute your code
@@ -47,6 +45,8 @@ def main():
     first()
     second()
     third()
+
+    print('DEBUG:', DEBUG)
     if not DEBUG:
         print('Production timings with no debug prints:')
         print('first()', min(timeit.repeat('first()', globals=globals())))
@@ -54,4 +54,9 @@ def main():
         print('third()', min(timeit.repeat('third()', globals=globals())))
 
 if __name__ == '__main__':
-    main()
+    print("""
+# Don't run this file directly, use one of these commands:
+
+DEBUG=0 python ./run.py
+DEBUG=1 python ./run.py
+""")
