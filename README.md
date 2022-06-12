@@ -1,13 +1,15 @@
 ultraimport -  File-based Python Imports
 ----------------------------------------
 
-`ultraimport` gives you stable and reliable imports -- no matter how you run your code.
+`ultraimport` gives you reliable imports -- no matter how you run your code.
 
 **Features**:
 
 - import any file from the file system as Python code
-- reliable, relative imports
+- reliable relative or absolute imports
+- preprocess code for optimizations
 - re-import the same file as often as you want
+- lazy loading (lazy imports for modules and callables)
 
 **Warning: This is an early hack. No unit tests exist. Maybe not stable!**
 
@@ -177,7 +179,7 @@ python ./run.py
 
 ## Parameters
 
-`def ultraimport(file_path, objects_to_import = None, globals=None, caller=None, use_cache=True)`
+`def ultraimport(file_path, objects_to_import = None, globals=None, preprocessor=None, caller=None, use_cache=True, lazy=False)`
 
 `file_path`: path to a file to import, ie. *'my_lib.py'*. It can have any file extension. Please be aware that you must provide the file extension.
 The path can be relative or absolute. You can use the special string `__dir__` to refer to the director of the caller which will be derived
@@ -188,10 +190,15 @@ via inspetions. If you use advanced debugging tools you might have to set `calle
 `globals`: add the `objects_to_import` to the dict provided. Usually called with `gloabls=globals()` if you want the imported module
 to be added to the globals of the caller.
 
-`use_cache`: if set to false, allow re-importing of the same source file even if it was cached before.
+`preprocessor`: callable that takes the source code as an argument and that can return a modified version of the source code.
+
+`use_cache`: if set to False, allow re-importing of the same source file even if it was import before.
+
+`lazy`: if set to True and if objects_to_import is set to None, it will lazy import the module. If set to True and objects_to_import is a dict, the values of the dict must be the type of the object to lazy import from the module. Currently only the type 'callable' is supported.
 
 
 ## Contributing
 
-We love contributions! ultraimport is open source,
-built on open source, and we'd love to have you hang out in our community.
+We love contributions!
+
+ultraimport is open source, built on open source, and we'd love to have you hang out in our community.
