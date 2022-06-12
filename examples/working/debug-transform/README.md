@@ -33,3 +33,15 @@ Use `DEBUG=1 python ./run.py` or `python DEBUG=0 python ./run.py`.
 `run.py` contains the preprocess function and also imports `debug.py`.
 
 On the first import, a file `debug__preprocessed__.py` is generated with the result of the preprocessing. Through a special loader, this file is transparently used (and updated) when you import `debug.py` through ultraimport.
+
+```shell
+$ DEBUG=0 python ./run.py
+Preprocessing..
+DEBUG: False
+Production timings with no debug prints:
+first() 0.05868230201303959
+second() 0.05797609454020858
+third() 0.12420633807778358
+```
+
+As you can see, the `third()` function is still slower then the preprocessing approach from the `first()` function, even though it avoids executing the expensive calculation.

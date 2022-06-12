@@ -10,9 +10,7 @@ import re
 
 def preprocess(source):
 
-    print("preprocess..")
-    import time
-    time.sleep(3)
+    print("Preprocessing..")
 
     # Here we use regular expressions to modify the source code but you can use
     # any other technique, e. g. a classical preprocessor like gpp or you could
@@ -22,7 +20,6 @@ def preprocess(source):
         # Wrap all lines starting with `log.debug(..` with `if DEBUG: log.debug(..`
         # so we skip calculation of any parameters
         line = re.sub('^(\s*)log\.debug\(', '\\1if DEBUG: log.debug(', line)
-        print('|', line)
         lines.append(line)
 
     return str.join("\n", lines).encode()
