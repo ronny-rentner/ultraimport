@@ -5,8 +5,8 @@
 # Note 1: The following hack to adjust sys.path is only necessary for demo purpose so you can
 #         just git clone the ultraimport repository and run this example without installation.
 #
-# Note 2: In real life, you'll install ultraimport as a (system wide) library and you can then
-#         use the normal import feature of Python.
+# Note 2: In real life, you'll install ultraimport as a (system wide or in your virtual environment)
+#         library and you can then use the normal import feature of Python.
 
 import sys, os
 # Add the 4th parent directory of this example to sys.path
@@ -23,8 +23,6 @@ ultraimport('__dir__/log.py', 'logger', globals=globals())
 # Lazy import the cache module. On the first access to any attribute of
 # cache, the real cache module will be loaded
 cache = ultraimport('__dir__/cache.py', lazy=True)
-
-print(cache)
 
 def main():
     # do something
