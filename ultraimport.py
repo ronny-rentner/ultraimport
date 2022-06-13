@@ -18,7 +18,8 @@
 # limitations under the License.
 #
 
-import importlib, os, sys, contextlib, types
+import importlib, importlib.machinery, importlib.util
+import os, sys, contextlib, types
 
 cache = {}
 import_ongoing_stack = {}

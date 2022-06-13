@@ -1,7 +1,5 @@
 import ultraimport, sys
 
-print("hello from log")
-
 cache_load, cache_store = ultraimport('__dir__/cache.py', ['load', 'store'])
 
 def logger(message):
@@ -11,5 +9,3 @@ def logger(message):
     else:
         print('Not repeating message')
 
-
-#logger("Logger fully loaded")
