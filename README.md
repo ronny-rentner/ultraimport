@@ -1,6 +1,6 @@
-# ultraimport -  File-based Python Imports
+# ultraimport
 
-`ultraimport` gives you reliable, local imports -- no matter how you run your code.
+Reliable, file system based imports -- no matter how you run your code.
 
 **Features**:
 - import any file from the file system as Python code
