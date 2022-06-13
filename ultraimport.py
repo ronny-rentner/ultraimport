@@ -18,9 +18,7 @@
 # limitations under the License.
 #
 
-import importlib, os, pathlib, sys, contextlib, types
-
-import token_utils
+import importlib, os, sys, contextlib, types
 
 cache = {}
 import_ongoing_stack = {}

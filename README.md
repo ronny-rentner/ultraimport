@@ -3,7 +3,6 @@
 `ultraimport` gives you reliable, local imports -- no matter how you run your code.
 
 **Features**:
-
 - import any file from the file system as Python code
 - forget about packages and modules, it's just a file and you can import it!
 - preprocess code for optimizations
@@ -167,7 +166,7 @@ else:
 As you can see, you'll have to import ultraimport in the classical way. It's intended to be installed as a system-wide library.
 Afterwards, you can import your own code based on relative or absolute file system paths so it can always be found.
 
-Python code can be executed in a number of different ways:
+With ultraimoprt, Python code can be executed in an way and the imports keep working:
 ```shell
 # Works
 python ~/myprogram/run.py
@@ -200,16 +199,16 @@ python ./run.py
 `file_path`: path to a file to import, ie. *'my_lib.py'*. It can have any file extension. Please be aware that you must provide the file extension. The path can be relative or absolute. You can use the special string `__dir__` to refer to the directory of the caller which will be derived
 via inspetions. If you use advanced debugging tools (or want to save some CPU cycles) you might want to set `caller=__file__`.
 
-`objects_to_import`: provide name of single object or the value `'*'` or an iterable of object names to import from file_path. If `lazy=True`, this should be a dict where the values declare the types of the imported objects.
+`objects_to_import`: provide name of single object or the value `'*'` or an iterable of object names to import from `file_path`. If `lazy=True`, this should be a dict where the values declare the types of the imported objects.
 
 `globals`: add the `objects_to_import` to the dict provided. Usually called with `gloabls=globals()` if you want the imported module
 to be added to the globals of the caller.
 
-`preprocessor`: callable that takes the source code as an argument and that can return a modified version of the source code.
+`preprocessor`: callable that takes the source code as an argument and that can return a modified version of the source code. Check out the [debug-transform example](/examples/working/debug-transform) on how to use the preprocessor.
 
 `use_cache`: if set to False, allow re-importing of the same source file even if it was import before.
 
-`lazy`: if set to True and if objects_to_import is set to None, it will lazy import the module. If set to True and objects_to_import is a dict, the values of the dict must be the type of the object to lazy import from the module. Currently only the type 'callable' is supported.
+`lazy`: if set to `True` and if `objects_to_import` is set to `None`, it will lazy import the module. If set to True and `objects_to_import` is a dict, the values of the dict must be the type of the object to lazy import from the module. Currently only the type `callable` is supported.
 
 
 ## Contributing
