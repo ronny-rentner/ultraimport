@@ -173,7 +173,7 @@ else:
 As you can see, you'll have to import ultraimport in the classical way. It's intended to be installed as a system-wide library.
 Afterwards, you can import your own code based on relative or absolute file system paths so it can always be found.
 
-With ultraimoprt, Python code can be executed in an way and the imports keep working:
+With ultraimport, Python code can be executed in an way and the imports keep working:
 ```shell
 # Works
 python ~/myprogram/run.py
