@@ -2,7 +2,7 @@
 
 
 #
-# Note 1: The following hack to adjust sys.path is only necessary for demo purpose so you can
+# Note 1: The following hack to adjust sys.path is only necessary for demo purposes so you can
 #         just git clone the ultraimport repository and run this example without installation.
 #
 # Note 2: In real life, you'll install ultraimport as a (system wide or in your virtual environment)
@@ -13,11 +13,12 @@ import sys, os
 sys.path.insert(0, os.path.dirname(__file__) + '/../../..')
 
 
-
+# ultraimport needs to be installed and imported in the classical way.
 import ultraimport
 
 # Import the 'logger' object from 'log.py' that is located in the same
 # directory as this file and add 'logger' to the global namespace.
+# `__dir__` refers to the directory where run.py is in.
 ultraimport('__dir__/log.py', 'logger', globals=globals())
 
 # Lazy import the cache module. On the first access to any attribute of

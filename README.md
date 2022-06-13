@@ -50,21 +50,26 @@ run.py:
 # ultraimport needs to be installed and imported in the classical way.
 import ultraimport
 
-# `__dir__` refers to the directory where run.py is in
+# Import the 'logger' object from 'log.py' that is located in the same
+# directory as this file and add 'logger' to the global namespace.
+# `__dir__` refers to the directory where run.py is in.
 ultraimport('__dir__/log.py', 'logger', globals=globals())
 
-# alias objects after import
-store, load = ultraimport('__dir__/cache.py', ('store', 'load'))
+# Lazy import the cache module. On the first access to any attribute of
+# cache, the real cache module will be loaded
+cache = ultraimport('__dir__/cache.py', lazy=True)
 
 def main():
     # do something
 
     logger('I did something')
 
+    cache.store('Something')
+
 if __name__ == '__main__':
     main()
 else:
-    logger('I have been imported')
+    logger('I was imported')
 ```
 
 With `ultraimport`, no matter how you call run.py, it will always find log.py.
@@ -140,10 +145,12 @@ run.py:
 ```python
 #!/usr/bin/env python3
 
+# ultraimport needs to be installed and imported in the classical way.
 import ultraimport
 
 # Import the 'logger' object from 'log.py' that is located in the same
 # directory as this file and add 'logger' to the global namespace.
+# `__dir__` refers to the directory where run.py is in.
 ultraimport('__dir__/log.py', 'logger', globals=globals())
 
 # Lazy import the cache module. On the first access to any attribute of
