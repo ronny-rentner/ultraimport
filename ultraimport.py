@@ -1,9 +1,9 @@
 #
 # ultraimport
 #
-# Stable, File-based Python Imports
+# Reliable, file system based imports -- no matter how you run your code
 #
-# Copyright [2022] [Ronny Rentner] [ultraimport@ronny-rentner.de]
+# Copyright [2022] [Ronny Rentner] [ultraimport.code@ronny-rentner.de]
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -157,8 +157,8 @@ def ultraimport(file_path, objects_to_import = None, globals=None, preprocessor=
         if use_cache and file_path in cache:
             module = cache[file_path]
         else:
-            #if not os.path.exists(file_path):
-            #    raise ImportError(f"'{file_path}' does not exist (resolved path: '{os.path.abspath(file_path)}')")
+            if not os.path.exists(file_path):
+                raise ImportError(f"'{file_path}' does not exist (resolved path: '{os.path.abspath(file_path)}')")
 
             name = get_name(file_path)
             #file_path = os.path.abspath(file_path)

@@ -6,14 +6,14 @@ import Cython.Build
 this_directory = Path(__file__).parent
 long_description = (this_directory / "README.md").read_text()
 
-version = '0.0.2'
+version = '0.0.3'
 
 ext = Extension(name="ultraimport", sources=["ultraimport.py"])
 
 setup(
     name='ultraimport',
     version=version,
-    description='File-based Python imports',
+    description='Reliable, file system based imports -- no matter how you run your code',
     long_description=long_description,
     long_description_content_type='text/markdown',
     author='Ronny Rentner',
@@ -25,5 +25,5 @@ setup(
     zip_safe=False,
     ext_modules=Cython.Build.cythonize(ext, compiler_directives={'language_level' : "3"}),
     setup_requires=['cython>=0.24.1'],
-    python_requires=">=3.9",
+    python_requires=">=3.8",
 )

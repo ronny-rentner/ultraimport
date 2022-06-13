@@ -1,8 +1,17 @@
+# Example Debug Library
+#
+# Don't run this library directly. Use the 'run.py' program.
+#
+# Use:
+#
+# DEBUG=0 python ./run.py
+#
+# DEBUG=1 python ./run.py
+
+
 import logging as log
 
-logger = log
-
-import os, dis, timeit
+import os, timeit
 
 DEBUG=False if os.environ.get('DEBUG', "0") in ['0', 'no', 'off', 'false', 'False'] else True
 # If the DEBUG flag is set, we print our debug log messages.
