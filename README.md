@@ -1,6 +1,6 @@
-# ultraimport -  File-based Python Imports
+# ultraimport
 
-`ultraimport` gives you reliable, local imports -- no matter how you run your code.
+Reliable, file system based imports -- no matter how you run your code.
 
 **Features**:
 - import any file from the file system as Python code
@@ -173,7 +173,7 @@ else:
 As you can see, you'll have to import ultraimport in the classical way. It's intended to be installed as a system-wide library.
 Afterwards, you can import your own code based on relative or absolute file system paths so it can always be found.
 
-With ultraimoprt, Python code can be executed in an way and the imports keep working:
+With ultraimport, Python code can be executed in an way and the imports keep working:
 ```shell
 # Works
 python ~/myprogram/run.py
