@@ -213,7 +213,7 @@ to be added to the globals of the caller.
 
 `preprocessor`: callable that takes the source code as an argument and that can return a modified version of the source code. Check out the [debug-transform example](/examples/working/debug-transform) on how to use the preprocessor.
 
-`use_cache`: if set to False, allow re-importing of the same source file even if it was import before.
+`use_cache`: if set to False, allow re-importing of the same source file even if it was imported before.
 
 `lazy`: if set to `True` and if `objects_to_import` is set to `None`, it will lazy import the module. If set to True and `objects_to_import` is a dict, the values of the dict must be the type of the object to lazy import from the module. Currently only the type `callable` is supported.
 
