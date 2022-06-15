@@ -1,0 +1,2 @@
+class GameLoopEvents():
+    pass
