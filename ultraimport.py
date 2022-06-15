@@ -225,7 +225,8 @@ def ultraimport(file_path, objects_to_import = None, globals=None, preprocessor=
             # Inject ultraimport() function into module
             module.ultraimport = ultraimport
 
-            if package_name := get_package_name(file_path, package):
+            package_name = get_package_name(file_path, package)
+            if package_name:
                 #print('package_name', package_name)
                 module.__package__ = package_name
 
