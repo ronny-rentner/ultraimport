@@ -1,14 +1,13 @@
 #!/usr/bin/env python3
-#
-# Note 1: The following hack to adjust sys.path is only necessary for demo purposes so you can
-#         just git clone the ultraimport repository and directly run this example without installation.
-#
-# Note 2: In real life, you'll install ultraimport as a system wide library and you can then use the
-#         normal import feature of Python without changing sys.path.
 
-import sys, os
-# Add the 4th parent directory of this example to sys.path
-sys.path.insert(0, os.path.dirname(__file__) + '/../../..')
+# NOTE: Uncomment the following two lines of code to run this example without installing ultraimport.
+#       Changing sys.path is only necessary for demo purposes so you can just git clone the repository
+#       and directly run this example without installation.
+#       In real life, you'll install ultraimport as a system wide library and you can then use the
+#       normal import feature of Python without changing sys.path.
+
+#import sys, os
+#sys.path.insert(0, os.path.dirname(__file__) + '/../../..')
 
 
 

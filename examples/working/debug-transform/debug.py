@@ -55,7 +55,7 @@ def third():
     my_log('Second debug print: %s', expensive_calculation)
 
 
-def main():
+def debug():
 
     print('DEBUG:', DEBUG)
 
