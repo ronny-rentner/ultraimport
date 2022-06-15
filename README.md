@@ -6,6 +6,7 @@ Reliable, file system based imports -- no matter how you run your code.
 - import any file from the file system as Python code
 - forget about packages and modules, it's just a file and you can import it!
 - preprocess code for optimizations
+- recursively rewrite subsequent import statements
 - re-import the same file as often as you want
 - lazy loading (lazy imports for modules and callables)
 - fix circular imports through lazy imports
@@ -201,7 +202,7 @@ python ./run.py
 
 ## Parameters
 
-`def ultraimport(file_path, objects_to_import = None, globals=None, preprocessor=None, caller=None, use_cache=True, lazy=False)`
+`def ultraimport(file_path, objects_to_import = None, globals=None, preprocessor=None, package=None, caller=None, use_cache=True, lazy=False)`
 
 `file_path`: path to a file to import, ie. *'my_lib.py'*. It can have any file extension. Please be aware that you must provide the file extension. The path can be relative or absolute. You can use the special string `__dir__` to refer to the directory of the caller which will be derived
 via inspetions. If you use advanced debugging tools (or want to save some CPU cycles) you might want to set `caller=__file__`.
@@ -213,10 +214,13 @@ to be added to the globals of the caller.
 
 `preprocessor`: callable that takes the source code as an argument and that can return a modified version of the source code. Check out the [debug-transform example](/examples/working/debug-transform) on how to use the preprocessor.
 
+`package`: can have several modes depending on if you provide a string or an int. If you provide a string, this string will be used as a value of the `__package__` variable of the imported module. If you set an int, it means the number of directories to extract from the `file_path` to calculate the value of `__package__`. Usually you do not have to set this. It can only help in a few cases with nested relative imports when not using the `resurse=True` mode. If `package` is set to `None`, the module will be imported without setting a `__package__`.
+
 `use_cache`: if set to False, allow re-importing of the same source file even if it was imported before.
 
 `lazy`: if set to `True` and if `objects_to_import` is set to `None`, it will lazy import the module. If set to True and `objects_to_import` is a dict, the values of the dict must be the type of the object to lazy import from the module. Currently only the type `callable` is supported.
 
+`recurse`: if set to `True`, a built-in preprocessor is activated to transparently rewrite all `from .. import ..` statements (only relative imports) to ultraimport() calls. Use this mode if you have no control over the source code of the impored modules.
 
 ## Contributing
 
