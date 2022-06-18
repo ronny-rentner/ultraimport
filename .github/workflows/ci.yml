@@ -1,0 +1,73 @@
+name: Run Python Tests
+on:
+  push:
+    branches:
+      - main
+      - dev
+  pull_request:
+    branches:
+      - main
+      - dev
+
+jobs:
+  build:
+    name: Build on ${{ matrix.config.name }} with ${{ matrix.python-version }}
+    runs-on: ${{ matrix.config.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        config:
+          - name: "win32-x86"
+            os: windows-2019
+            arch: x86
+          - name: "win32-amd64"
+            os: windows-2019
+            arch: AMD64
+
+          - name: "macos-x84_64"
+            os: macos-10.15
+            arch: x86_64
+          - name: "macos-universal2"
+            os: macos-10.15
+            arch: universal2
+
+          - name: "linux-i386"
+            os: ubuntu-20.04
+            arch: i686
+            platform: i386
+          - name: "linux-x86_64"
+            os: ubuntu-20.04
+            arch: x86_64
+            platform: x86_64
+          - name: "linux-aarch64"
+            os: ubuntu-20.04
+            arch: aarch64
+            platform: aarch64
+          - name: "linux-ppc64le"
+            os: ubuntu-20.04
+            arch: ppc64le
+            platform: ppc64le
+          - name: "linux-s390x"
+            os: ubuntu-20.04
+            arch: s390x
+            platform: s390x
+        # Run in all these versions of Python
+        python-version: ["3.8", "3.9", "3.10"]
+    steps:
+      - uses: actions/checkout@v3
+      - name: Install Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v3
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Display Python version
+        run: python -c "import sys; print(sys.version)"
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          #pip install -r requirements.txt
+          # Manually install psutils as long as we don't build the wheels
+          pip install psutil
+          # Manually install pylint as long as we don't build the wheels
+          #pip install pylint
+      - name: Run unit tests
+        run: python -m unittest
