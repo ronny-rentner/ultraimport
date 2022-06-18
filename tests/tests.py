@@ -23,6 +23,7 @@ class ultraimportTests(unittest.TestCase):
         self.assertEqual(ret.returncode, 0, f'Running {filename} did return with an error: {ret}')
         self.assertEqual(ret.stdout, b"""I did something\ncache store: I did something\ncache store: Something\n""")
 
+    @unittest.skipUnless(sys.version_info >= (3, 9), "requires Python >= 3.9")
     def test_example_mypackage(self):
         filename = "examples/working/mypackage/run.py"
         ret = self.exec(filename)
