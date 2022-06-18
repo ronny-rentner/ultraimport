@@ -61,9 +61,10 @@ class LazyModule(types.ModuleType):
 class UltraSourceFileLoader(importlib.machinery.SourceFileLoader):
     """ Preprocessing Python source file loader """
 
-    def __init__(self, name, file_path, preprocessor = None):
+    def __init__(self, name, file_path, preprocessor = None, cache=True):
         super().__init__(name, file_path)
         self.preprocessor = preprocessor
+        self.cache = cache
         if self.preprocessor:
             self.check_preprocess(file_path)
 
@@ -92,9 +93,16 @@ class UltraSourceFileLoader(importlib.machinery.SourceFileLoader):
     def is_bytecode(self, file_path):
         return file_path[file_path.rindex("."):] in importlib.machinery.BYTECODE_SUFFIXES
 
-    #def path_stats(self, path):
-        # Invalidate bytecode cache
-        #raise OSError
+    def path_stats(self, path):
+        if not self.cache:
+            # Invalidate bytecode cache
+            raise OSError
+        else:
+            return super().path_stats(path)
+
+    def get_data(self, path):
+        #print('get_data', path)
+        return super().get_data(path)
 
     def get_filename(self, fullname):
         #print('get_filename', fullname, self.path)
@@ -157,7 +165,7 @@ def get_package_name(file_path, package):
         return '.'.join(os.path.dirname(os.path.abspath(file_path)).split(os.sep)[-package:])
     return None
 
-def ultraimport(file_path, objects_to_import = None, globals=None, preprocessor=None, package=None, caller=None, caller_level=1, use_cache=True, lazy=False, recurse=False):
+def ultraimport(file_path, objects_to_import = None, globals=None, preprocessor=None, package=None, caller=None, caller_level=1, use_cache=True, lazy=False, recurse=False, inject=None, inject_override=None):
 
     #print("ultra", file_path)
 
@@ -218,12 +226,16 @@ def ultraimport(file_path, objects_to_import = None, globals=None, preprocessor=
                     source = preprocessor(source)
                     return transform_imports(source)
                 _pre = _
-            loader = UltraSourceFileLoader(name, file_path, _pre)
+            loader = UltraSourceFileLoader(name, file_path, preprocessor=_pre, cache=use_cache)
             spec = importlib.util.spec_from_loader(name, loader)
             module = importlib.util.module_from_spec(spec)
 
             # Inject ultraimport() function into module
             module.ultraimport = ultraimport
+
+            if inject:
+                for k, v in inject.items():
+                    setattr(module, k, v)
 
             package_name = get_package_name(file_path, package)
             if package_name:
