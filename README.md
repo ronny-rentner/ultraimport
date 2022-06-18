@@ -1,18 +1,18 @@
 # ultraimport
 
-Reliable, file system based imports -- no matter how you run your code.
+Get control over your imports -- no matter how you run your code.
 
 **Features**:
-- import any file from the file system as Python code
-- forget about packages and modules, it's just a file and you can import it!
-- preprocess code for optimizations (see [example](/examples/working/debug-transform))
-- recursively rewrite subsequent import statements
-- re-import the same file as often as you want
-- dependency injection (see [example](/examples/working/dependency-injection))
-- lazy loading (lazy imports for modules and callables)
-- fix circular imports through lazy imports or dependency injection
-- fix the error: `ImportError: attempted relative import with no known parent package`
-- fix the error: `ValueError: attempted relative import beyond top-level package`
+- No more ambiguity: Import any file from the file system as Python code.
+- Forget about packages and modules: It's just a file and you can import it.
+- Preprocess code for optimizations (see [example](/examples/working/debug-transform))
+- Recursively rewrite subsequent relative import statements
+- Re-import the same file as often as you want
+- Dependency injection (see [example](/examples/working/dependency-injection))
+- Lazy loading (lazy imports for modules and callables)
+- Fix circular imports through lazy imports or dependency injection
+- Fix the error: `ImportError: attempted relative import with no known parent package`
+- Fix the error: `ValueError: attempted relative import beyond top-level package`
 
 **Warning: This is an early hack. No unit tests exist. Maybe not stable!**
 

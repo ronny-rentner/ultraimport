@@ -1,4 +1,4 @@
-# Example: debug-transform
+# ultraimport: Preprocessing Example
 
 This example shows how to automatically optimize debug logging. Usually you'll log differerent messages with different priorities. The issue is that all arguments to log messages are still calculated, no matter if the log message appears or not.
 
@@ -26,7 +26,7 @@ log.debug(msg, expensive_calculation())
 
 but if debug logging is turned off, it will not execut the expensive calculation. Through preprocessing, all `log.debug(` statements are wrapped with `if DEBUG:` automatically.
 
-# How to run this example?
+# How To Run?
 
 Use `DEBUG=1 python ./run.py` or `python DEBUG=0 python ./run.py`.
 
