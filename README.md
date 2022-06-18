@@ -19,7 +19,7 @@ Get control over your imports -- no matter how you run your code.
 - Fix the error: `ImportError: attempted relative import with no known parent package`
 - Fix the error: `ValueError: attempted relative import beyond top-level package`
 
-**Is `ultraimport` supposed to replace the normal import statement?**
+**Is ultraimport supposed to replace the normal import statement?**
 
 No, not for now. The normal import statement will continue to exist to import 3rd party libraries. `ultraimport` is meant to import files whose locations you control because they are located relatively to some other files.
 
