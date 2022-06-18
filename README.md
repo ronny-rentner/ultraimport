@@ -5,10 +5,10 @@ Reliable, file system based imports -- no matter how you run your code.
 **Features**:
 - import any file from the file system as Python code
 - forget about packages and modules, it's just a file and you can import it!
-- preprocess code for optimizations (see [example][/examples/working/debug-transform])
+- preprocess code for optimizations (see [example](/examples/working/debug-transform]))
 - recursively rewrite subsequent import statements
 - re-import the same file as often as you want
-- dependency injection (see [example](/examples/working/dependency-injection)
+- dependency injection (see [example](/examples/working/dependency-injection))
 - lazy loading (lazy imports for modules and callables)
 - fix circular imports through lazy imports or dependency injection
 - fix the error: `ImportError: attempted relative import with no known parent package`
