@@ -8,6 +8,5 @@ from . import siblingmodule
 from ..mymodule import myfunction
 
 myfunction('hello from submodule.py')
-print('submodule:', myfunction, xmodule)
 
 print('submodule end')

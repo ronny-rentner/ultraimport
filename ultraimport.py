@@ -222,10 +222,13 @@ def ultraimport(file_path, objects_to_import = None, globals=None, preprocessor=
 
             _pre = preprocessor
             if recurse:
-                def _(source):
-                    source = preprocessor(source)
-                    return transform_imports(source)
-                _pre = _
+                if preprocessor:
+                    def _(source):
+                        source = preprocessor(source)
+                        return transform_imports(source)
+                    _pre = _
+                else:
+                    _pre = transform_imports
             loader = UltraSourceFileLoader(name, file_path, preprocessor=_pre, cache=use_cache)
             spec = importlib.util.spec_from_loader(name, loader)
             module = importlib.util.module_from_spec(spec)
