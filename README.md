@@ -2,7 +2,7 @@
 
 Get control over your imports -- no matter how you run your code.
 
-**Warning: This is an early hack. No are only few unit tests. Maybe not stable!**
+**Warning: This is an early hack. There are only few unit tests. Maybe not stable!**
 
 [![PyPI Package](https://img.shields.io/pypi/v/ultradict.svg)](https://pypi.org/project/ultraimport)
 [![Run Python Tests](https://github.com/ronny-rentner/ultraimport/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/ronny-rentner/ultraimport/actions/workflows/ci.yml)
