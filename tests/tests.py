@@ -11,9 +11,9 @@ class ultraimportTests(unittest.TestCase):
 
     def exec(self, filepath):
         env = os.environ.copy()
-        env["PYTHONPATH"] = os.path.dirname(__file__) + os.path.sep + '..'
+        env["PYTHONPATH"] = os.path.dirname(__file__) + os.path.sep + '../'
         ret = subprocess.run([sys.executable, filepath],
-                stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+                stdout=subprocess.PIPE, stderr=subprocess.STDOUT, env=env)
         ret.stdout = ret.stdout.replace(b'\r\n', b'\n');
         return ret
 
