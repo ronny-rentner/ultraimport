@@ -2,6 +2,11 @@
 
 Get control over your imports -- no matter how you run your code.
 
+**Warning: This is an early hack. No are only few unit tests. Maybe not stable!**
+
+[![PyPI Package](https://img.shields.io/pypi/v/ultradict.svg)](https://pypi.org/project/ultraimport)
+[![Run Python Tests](https://github.com/ronny-rentner/ultraimport/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/ronny-rentner/ultraimport/actions/workflows/ci.yml)
+
 **Features**:
 - No more ambiguity: Import any file from the file system as Python code.
 - Forget about packages and modules: It's just a file and you can import it.
@@ -14,9 +19,7 @@ Get control over your imports -- no matter how you run your code.
 - Fix the error: `ImportError: attempted relative import with no known parent package`
 - Fix the error: `ValueError: attempted relative import beyond top-level package`
 
-**Warning: This is an early hack. No unit tests exist. Maybe not stable!**
-
-Is `ultraimport` supposed to replace the normal import statement?
+**Is `ultraimport` supposed to replace the normal import statement?**
 
 No, not for now. The normal import statement will continue to exist to import 3rd party libraries. `ultraimport` is meant to import files whose locations you control because they are located relatively to some other files.
 
