@@ -1,6 +1,4 @@
-import unittest
-import subprocess
-import sys
+import unittest, subprocess, sys, os
 
 sys.path.insert(0, '..')
 
@@ -12,6 +10,8 @@ class ultraimportTests(unittest.TestCase):
         pass
 
     def exec(self, filepath):
+        env = os.environ.copy()
+        env["PYTHONPATH"] = os.path.dirname(__file__) + os.path.sep + '..'
         ret = subprocess.run([sys.executable, filepath],
                 stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
         ret.stdout = ret.stdout.replace(b'\r\n', b'\n');
