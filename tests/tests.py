@@ -17,6 +17,14 @@ class ultraimportTests(unittest.TestCase):
         ret.stdout = ret.stdout.replace(b'\r\n', b'\n');
         return ret
 
+    def test_file_not_found(self):
+        with self.assertRaises(ImportError):
+            ultraimport('none_existant_random_file.py')
+
+    def test_syntax_error(self):
+        with self.assertRaises(NameError):
+            ultraimport('__dir__/../examples/broken/syntax_error.py')
+
     def test_example_myprogram(self):
         filename = "examples/working/myprogram/run.py"
         ret = self.exec(filename)

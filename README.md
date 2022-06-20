@@ -21,7 +21,7 @@ Get control over your imports -- no matter how you run your code.
 
 **Is ultraimport supposed to replace the normal import statement?**
 
-No, not for now. The normal import statement will continue to exist to import 3rd party libraries. `ultraimport` is meant to import files whose locations you control because they are located relatively to some other files.
+No, not for now. You will continue to use the builtin import statements to import 3rd party libraries. `ultraimport` is meant to import files whose locations you control because they are located relatively to some other files.
 
 ## Installation
 
@@ -141,6 +141,15 @@ Sometimes Python can see it, sometimes not.
 
 Even if there was no parent package, what's the issue with importing a module that
 I only know from its relative position to my current module?
+
+The main problem with the orignal Python imports is that they are ambiguous. As a programmer,
+you work on source code files in the file system. But Python doesn't import source code files
+from the file system. It imports packages and modules. The structure of the directories and files
+in your file system is somehow mapped to the structure of packages and modules in Python,
+but in an *ambiguous* way with external dependencies to thinkgs like your current working directory.
+This is bad, because you need to write more code to handle these external dependencies that you never wanted.
+All the information you have about your source code files is information about their relative
+location to each other in the file system.
 
 ## The Solution: ultraimport
 
