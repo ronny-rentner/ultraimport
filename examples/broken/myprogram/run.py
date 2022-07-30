@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 from .log import logger
 
 def main():
@@ -6,7 +8,7 @@ def main():
     logger('I did something')
 
 
-if __name__ == 'main':
+if __name__ == '__main__':
     main()
 
 print('__name__:', __name__)
