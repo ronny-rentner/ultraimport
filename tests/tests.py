@@ -30,9 +30,9 @@ class ultraimportTests(unittest.TestCase):
 
     def test_file_not_found_with_suggestion(self):
         # Missing file ending .py
-        file_path = "examples/working/myprogram/run"
+        file_path = os.path.normpath("examples/working/myprogram/run")
         # This file_path will be suggested
-        file_path2 = "examples/working/myprogram/run.py"
+        file_path2 = os.path.normpath("examples/working/myprogram/run.py")
         with self.assertRaises(ultraimport.Error) as cm:
             ultraimport(file_path)
         message = str(cm.exception)
