@@ -20,12 +20,16 @@
 
 import importlib, importlib.machinery, importlib.util
 import ast, collections, os, sys, contextlib, types, traceback
-import astprettier
+
+try:
+    import astprettier
+except:
+    pass
 
 cache = {}
 import_ongoing_stack = {}
 
-debug = True
+#debug = True
 debug = False
 
 CodeInfo = collections.namedtuple('CodeInfo', ['source', 'file_path', 'line', 'offset'])
