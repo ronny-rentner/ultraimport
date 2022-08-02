@@ -1,4 +1,4 @@
-import unittest, subprocess, sys, os
+import unittest, subprocess, sys, os, tempfile, pathlib
 
 # So we can find ultraimport without installing it
 sys.path.insert(0, '..')
@@ -20,7 +20,7 @@ class ultraimportTests(unittest.TestCase):
 
     def test_file_not_found(self):
         file_path = 'none_existant_random_file.py'
-        with self.assertRaises(ultraimport.Error) as cm:
+        with self.assertRaises(ultraimport.ResolveImportError) as cm:
             ultraimport(file_path)
         message = str(cm.exception)
         self.assertIn(file_path, message)
@@ -33,7 +33,7 @@ class ultraimportTests(unittest.TestCase):
         file_path = os.path.normpath("examples/working/myprogram/run")
         # This file_path will be suggested
         file_path2 = os.path.normpath("examples/working/myprogram/run.py")
-        with self.assertRaises(ultraimport.Error) as cm:
+        with self.assertRaises(ultraimport.ResolveImportError) as cm:
             ultraimport(file_path)
         message = str(cm.exception)
         self.assertIn(file_path2, message)
@@ -48,6 +48,30 @@ class ultraimportTests(unittest.TestCase):
         ret = self.exec(file_path)
         self.assertEqual(ret.returncode, 0, f'Running {file_path} did return with an error: {ret}')
         self.assertEqual(ret.stdout, b"""I did something\ncache store: I did something\ncache store: Something\n""")
+
+    def test_recurse_preprocessor_cache_path_prefix(self):
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            code_file = f'{tmp_dir}{os.sep}code.py'
+            with open(code_file, 'w') as f:
+                print('x = 1', file=f)
+
+            # No preprocessor cache
+            code_module = ultraimport(code_file, recurse=True, use_cache=False, use_preprocessor_cache=False)
+            pp_cache = pathlib.Path(f'{tmp_dir}{os.sep}code__preprocessed__.py')
+            self.assertFalse(pp_cache.is_file(),
+                f"Cached preprocessed file '{pp_cache}' should not exist when using `use_preprocessor_cache=False`")
+
+            # Default preprocessor cache (in same directory)
+            code_module = ultraimport(code_file, recurse=True, use_cache=False)
+            pp_cache = pathlib.Path(f'{tmp_dir}{os.sep}code__preprocessed__.py')
+            self.assertTrue(pp_cache.is_file(),
+                f"Cached preprocessed file '{pp_cache}' should exist when using `use_preprocessor_cache=True`")
+
+            # Preprocessor cache in subdirectory 'cache_folder'
+            code_module = ultraimport(code_file, recurse=True, use_cache=False, cache_path_prefix='cache_folder')
+            pp_cache = pathlib.Path(f'{tmp_dir}{os.sep}cache_folder{os.sep}code__preprocessed__.py')
+            self.assertTrue(pp_cache.is_file(),
+                f"Cached preprocessed file '{pp_cache}' should exist when using `use_preprocessor_cache=True`")
 
     def test_lazy_load(self):
         pass

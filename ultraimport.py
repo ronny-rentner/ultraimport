@@ -26,6 +26,7 @@ try:
 except:
     pass
 
+reload_counter = { 0: 0 }
 cache = {}
 import_ongoing_stack = {}
 
@@ -34,12 +35,51 @@ debug = False
 
 CodeInfo = collections.namedtuple('CodeInfo', ['source', 'file_path', 'line', 'offset'])
 
+class ErrorRendererMixin():
+
+    def render_table(self, data):
+        """
+        Render a table for error output on console output.
+
+        The tables are meant to always have to columns with labels in the first
+        column and values in the second column.
+        """
+
+        assert type(data) == list
+        column1_size = 2
+        column2_size = 2
+
+        # First we identify the column width
+        for k, v in data:
+            column1_size = max(column1_size, len(str(k)))
+            column2_size = max(column2_size, len(str(v)))
+
+        table_lines = [ f" {k:>{column1_size}} │ {v}" for k, v in data ]
+
+        return '\n'.join(table_lines)
+
+    def render_header(self, headline, message):
+        headline_border = '─' * len(headline)
+        return f"""
+
+┌─{headline_border}─┐
+│ {headline} │
+└─{headline_border}─┘
+
+{message}
+"""
+
+    def render_suggestion(self, line1, line2):
+        return f"\n\n ╲ {line1}\n ╱ {line2}\n"
+
+
+
 class RewrittenImportError(ImportError):
     def __init__(self, message='', combine=None, code_info=None, object_to_import=None, *args):
 
         if combine and len(combine) > 0:
             for e in combine:
-                if type(e) is not Error:
+                if type(e) is not ResolveImportError:
                     raise AttributeError(f"Type of combined exceptions in 'combine' attribute must be 'ultraimport.Error', but it was '{type(e)}'")
 
         if not combine or (len(combine) < 1):
@@ -71,8 +111,72 @@ When importing '{object_to_import}', it could not been found in any of the files
 
         self.msg = message
 
-class Error(ImportError):
-    def __init__(self, message=None, file_path=None, file_path_resolved=None, *args):
+class ExecuteImportError(ImportError, ErrorRendererMixin):
+    def __init__(self, message=None, file_path=None, file_path_resolved=None, from_exception=None, *args):
+
+        super().__init__()
+
+        header = self.render_header('Execute Import Error', 'An import file could be found and read, but an error happened while executing it.')
+
+        frame = traceback.extract_tb(from_exception.__traceback__)[-1]
+        error_table = [
+            ('Source file', f"{frame.filename}, line {frame.lineno}"),
+            ('Happend in', frame.name),
+            ('Source code', frame.line)
+        ]
+
+        suggestion = ''
+
+        if from_exception and from_exception.msg == 'attempted relative import with no known parent package':
+            error_table.append(('Possible reason', 'A subsequent, relative import statement was found, but not handled.'))
+            error_table.append(('Original errror', f'"{from_exception.msg}"'))
+
+            suggestion = self.render_suggestion('To handle the relative import from above, use the ultraimport() parameter `recurse=True`.',
+                'This will activate automatic rewriting of subsequent, relative imports.')
+
+        body = self.render_table(error_table)
+
+        self.msg = f"{header}\n{body}{suggestion}"
+
+class ResolveImportError(ImportError, ErrorRendererMixin):
+    def __init__(self, message=None, file_path=None, file_path_resolved=None, from_exception=None, *args):
+
+        super().__init__()
+
+        # Save file_path for later analyzation
+        self.file_path = file_path
+        self.file_path_resolved = file_path_resolved
+        # Store the original reason/message for later
+        self.reason = message
+
+        header = self.render_header('Resolve Import Error', 'An import file could not be found or not be read.')
+
+        error_table = [
+            ('Import file_path', self.file_path),
+            ('Resolved file_path', self.file_path_resolved),
+            ('Possible reason', self.reason)
+        ]
+
+        suggestion = ''
+        if file_path_resolved and not file_path_resolved.endswith('.py'):
+            maybe_path = file_path_resolved + '.py'
+            if os.path.exists(maybe_path):
+                suggestion = self.render_suggestion(f"Did you mean to import '{maybe_path}'?",
+                    "You need to add the file extension '.py' to the file_path.")
+
+        if not suggestion:
+            suggestion = self.render_suggestion('Check the resolved `file_path` and find out why the file is not readable.',
+                'Maybe you have a typo in the `file_path` or maybe the parent directory does not exist or is not readable?')
+
+        body = self.render_table(error_table)
+
+        self.msg = f"{header}\n{body}{suggestion}"
+
+
+class Error(ImportError, ErrorRendererMixin):
+    def __init__(self, message=None, file_path=None, file_path_resolved=None, from_exception=None, *args):
+
+        super().__init__()
 
         # Save file_path for later analyzation
         self.file_path = file_path
@@ -81,35 +185,47 @@ class Error(ImportError):
         self.reason = message
 
         suggestion = ""
+        main_error = ""
+        error_table = []
         if file_path_resolved and not file_path_resolved.endswith('.py'):
             maybe_path = file_path_resolved + '.py'
             if os.path.exists(maybe_path):
                 suggestion += f"\n ╲ Did you mean to import '{maybe_path}'?\n ╱ You need to add the file extension '.py' to the file_path."
+
+        elif (from_exception and from_exception.msg == 'attempted relative import with no known parent package'):
+            suggestion += f"\n ╲ There is possibly a chain of relative imports. Change them to ultraimports() or\n ╱ add the parameter `recurse=True` to activate automatic rewriting of further relative imports."
+
+            #self.__traceback__ == from_exception.__traceback__
+
+            #cause = self.find_cause(from_exception.__traceback__)
+
+            # Last frame on the stack
+            frame = traceback.extract_tb(from_exception.__traceback__)[-1]
+
+            error_table.append(('Problematic code', frame.filename))
+            error_table.append(('Error happend in', frame.lineno))
+            error_table.append(('Name', frame.name))
+            error_table.append(('Line', frame.line))
+
+            main_error = f"\nA subsequent relative import statement was found.\n{self.render_table(error_table)}\n"
 
         message = f"""
 
 ┌────────────────────┐
 │ Ultra Import Error │
 └────────────────────┘
+{main_error}
+  Import file_path | {self.file_path}
+Resolved file_path | {self.file_path_resolved}
+                   | (Possible reason: {self.reason})
 
-Original file_path: '{self.file_path}'
-Resolved file_path: {self.file_path_resolved}
-                    (Possible reason: {self.reason})
 {suggestion}
 """
 
-        super().__init__('')
-
         self.msg = message
 
-        # TODO: How to replace the original stack trace with ours?
-        #if add_cause:
-        #    print('ADD CAUSE: ', cause)
-        #    self.__cause__ = cause if cause else self.build_cause()
-
-    def build_cause(self):
-        tb = None
-        depth = 0
+    def find_cause(self, tb=None, depth=0):
+        frame = None
         while True:
             try:
                 frame = sys._getframe(depth)
@@ -118,11 +234,7 @@ Resolved file_path: {self.file_path_resolved}
                     continue
             except ValueError as exc:
                 break
-
-            tb = types.TracebackType(tb, frame, frame.f_lasti, frame.f_lineno)
-
-        return Error(message=None, file_path=self.file_path, file_path_resolved=self.file_path_resolved,
-                add_cause=False).with_traceback(tb)
+        return frame
 
     #def __repr__(self):
     #    return 'REPR'
@@ -166,66 +278,72 @@ class LazyModule(types.ModuleType):
 class SourceFileLoader(importlib.machinery.SourceFileLoader):
     """ Preprocessing Python source file loader """
 
-    def __init__(self, name, file_path, preprocessor=None, cache=True, cache_path_prefix=''):
+    def __init__(self, name, file_path, preprocessor=None, use_cache=True, cache_path_prefix=None):
         super().__init__(name, file_path)
         self.preprocessor = preprocessor
-        self.cache = cache
+        self.use_cache = use_cache
         self.cache_path_prefix = cache_path_prefix
         if self.preprocessor:
             self.check_preprocess(file_path)
 
     def check_preprocess(self, file_path):
+        #print('CHECK FILE', file_path)
         file_name, file_extension = os.path.splitext(file_path)
 
         # This is the file_path we pretend to be loading, so it appears in stack traces
         self.preprocess_file_path_display = f"{file_name}__preprocessed__{file_extension}"
 
-        folder, file_name = os.path.split(file_name)
-        # This is the file_path we are really loading
-        self.preprocess_file_path = f"{sys.pycache_prefix or ''}{folder}{os.sep}__pycache__{os.sep}{file_name}__preprocessed__{file_extension}"
+        dir_name, file_name = os.path.split(file_name)
 
-        if self.cache and os.path.exists(self.preprocess_file_path):
+        # Add cache prefix to dir_name
+        if self.cache_path_prefix:
+            if os.path.isabs(self.cache_path_prefix):
+                dir_name = f"{self.cache_path_prefix}{os.sep}{dir_name}"
+            else:
+                dir_name = f"{dir_name}{os.sep}{self.cache_path_prefix}"
+
+        # This is the file_path we are really loading
+        self.preprocess_file_path = f"{dir_name}{os.sep}{file_name}__preprocessed__{file_extension}"
+
+        # Check if preprocessed file is outdated, if yes, run the preprocessing again
+        if self.use_cache and os.path.exists(self.preprocess_file_path):
             #print('CHECK CACHE STILL VALID?', file_path, self.preprocess_file_path)
             preprocessed = os.stat(self.preprocess_file_path)
             original = os.stat(file_path)
             if original.st_mtime > preprocessed.st_mtime:
                 self.preprocess(file_path)
+
         else:
             self.preprocess(file_path)
 
-    def calculate_preprocess_file_pathes(self, file_path):
-        dir_name, file_name = os.path.split(file_name)
-        base_name, file_extension = os.path.splitext(file_name)
-
-        # Add cache prefix to dir_name
-        if self.cache_path_prefix:
-            dir_name = f"{self.cache_path_prefix}{os.sep}{dir_name}" \
-                if os.path.isabs(self.cache_path_prefix) \
-                else f"{dir_name}{os.sep}{self.cache_path_prefix}"
-
-        # Real, absolute, full path to cached, preprocessed file
-        self.preprocess_file_path = f"{folder}{os.sep}{file_name}__preprocessed__{file_extension}"
-
-        self.preprocess_file_path_display = self.preprocess_file_path
-
-        self.preprocess_file_path_display = f"{base_name}__preprocessed__{file_extension}"
+    def ensure_dir(self, path):
+        dir_name, _ = os.path.split(path)
+        if not os.path.exists(dir_name):
+            os.makedirs(dir_name)
 
     def preprocess(self, file_path):
-        #print('PREP', file_path)
+        #print('PREP', file_path, self.use_cache)
         self.code = self.get_data(file_path, direct=True)
         self.code = self.preprocessor(self.code, file_path=file_path)
+
+        if not self.use_cache:
+            return
+
+        self.ensure_dir(self.preprocess_file_path)
+
         # Write processed code back for caching
         with open(self.preprocess_file_path, 'wb') as f:
             f.write(f"# NOTE: This file was automatically generated from:\n# {file_path}\n# DO NOT CHANGE DIRECTLY!\n".encode())
             f.write(self.code)
-        #os.utime(self.preprocess_file_path, (original['mtime'], original['mtime']))
+
+            #os.utime(self.preprocess_file_path, (original['mtime'], original['mtime']))
 
     def is_bytecode(self, file_path):
         return file_path[file_path.rindex("."):] in importlib.machinery.BYTECODE_SUFFIXES
 
     def path_stats(self, path):
         #print('STATS START', path)
-        if not self.cache:
+        if not self.use_cache:
             #print('CACHE OFF')
             # Invalidate bytecode cache
             raise OSError
@@ -238,7 +356,13 @@ class SourceFileLoader(importlib.machinery.SourceFileLoader):
             return super().path_stats(path)
 
     def get_data(self, path, direct=False):
-        #print('GET DATA', direct, self.preprocessor, path)
+        _, suffix = os.path.splitext(path)
+        #print('GET DATA', direct, self.preprocessor, path, suffix)
+
+        # We are importing a bytecode file, so it should be direct
+        if len(suffix) > 0 and suffix in importlib.machinery.BYTECODE_SUFFIXES:
+            direct = True
+
         if not direct and self.preprocessor:
             if path == self.preprocess_file_path_display:
                 path = self.preprocess_file_path
@@ -259,7 +383,30 @@ class RewriteImport(ast.NodeTransformer):
         super().__init__(*args)
         self.file_path = file_path
 
-    def gen_try(self, try_body, except_body = ast.Pass(), except_alias = 'e', except_error = 'ultraimport.Error'):
+    @classmethod
+    def transform_imports(cls, source, file_path=None, use_cache=True):
+
+        tree = ast.parse(source)
+
+        if debug:
+            print('--IN--------')
+            print(ast.dump(tree))
+            astprettier.pprint(tree, show_offsets=False, ns_prefix='ast')
+            print('---------')
+
+        tree = ast.fix_missing_locations(cls(file_path=file_path).visit(tree))
+
+        unparsed = ast.unparse(tree)
+
+        if debug:
+            print('--OUT--------')
+            print(unparsed)
+            print('---------')
+
+        return unparsed.encode()
+
+
+    def gen_try(self, try_body, except_body = ast.Pass(), except_alias = 'e', except_error = 'ultraimport.ResolveImportError'):
         if not except_body:
             except_body = ast.Pass()
         return ast.Try(
@@ -296,7 +443,7 @@ class RewriteImport(ast.NodeTransformer):
             keywords=[
                 self.gen_keyword('recurse', True),
                 # TODO: Remove and use cache
-                self.gen_keyword('use_cache', False),
+                #self.gen_keyword('use_cache', False),
             ],
         )
 
@@ -399,27 +546,6 @@ class RewriteImport(ast.NodeTransformer):
         return imports
 
 
-def transform_imports(source, file_path=None):
-
-    tree = ast.parse(source)
-
-    if debug:
-        print('--IN--------')
-        print(ast.dump(tree))
-        astprettier.pprint(tree, show_offsets=False, ns_prefix='ast')
-        print('---------')
-
-    tree = ast.fix_missing_locations(RewriteImport(file_path=file_path).visit(tree))
-
-    unparsed = ast.unparse(tree)
-
-    if debug:
-        print('--OUT--------')
-        print(unparsed)
-        print('---------')
-
-    return unparsed.encode()
-
 def get_module_name(file_path):
     """ Calculate Python compatible module name from file_path """
     base_name = os.path.basename(file_path)
@@ -452,15 +578,17 @@ def find_existing_module_by_path(file_path):
 
 def check_file_is_importable(file_path, file_path_orig):
     if not os.path.exists(file_path):
-        raise Error('File does not exist.', file_path=file_path_orig, file_path_resolved=file_path)
+        raise ResolveImportError('File does not exist.', file_path=file_path_orig, file_path_resolved=file_path)
 
     if not os.path.isfile(file_path):
-        raise Error('Object exists but is not a file.', file_path=file_path_orig, file_path_resolved=file_path)
+        raise ResolveImportError('Object exists but is not a file.', file_path=file_path_orig, file_path_resolved=file_path)
 
     if not os.access(file_path, os.R_OK):
-        raise Error('File exists but no read access.', file_path=file_path_orig, file_path_resolved=file_path)
+        raise ResolveImportError('File exists but no read access.', file_path=file_path_orig, file_path_resolved=file_path)
 
-def ultraimport(file_path, objects_to_import=None, globals=None, preprocessor=None, package=None, caller=None, caller_level=1, use_cache=True, lazy=False, recurse=False, inject=None, inject_override=None):
+    return True
+
+def ultraimport(file_path, objects_to_import=None, globals=None, preprocessor=None, package=None, caller=None, caller_level=1, use_cache=True, lazy=False, recurse=False, inject=None, use_preprocessor_cache=True, cache_path_prefix=None):
     if debug:
         print("ultraimport", file_path)
 
@@ -471,6 +599,9 @@ def ultraimport(file_path, objects_to_import=None, globals=None, preprocessor=No
     if not caller:
         import inspect
         caller = inspect.stack()[caller_level].filename
+
+    if caller == '<stdin>':
+        caller = f"{os.getcwd()}{os.sep}<stdin>"
 
     if '__dir__' in file_path:
         file_path = file_path.replace('__dir__', os.path.dirname(caller))
@@ -515,6 +646,9 @@ def ultraimport(file_path, objects_to_import=None, globals=None, preprocessor=No
 
         import_ongoing_stack[file_path] = True
 
+        #print('CACHE CHECK', use_cache, file_path, file_path in cache)
+        #print('CACHE', cache)
+
         # TODO: Should we use resolved file_path for the cache?
         if use_cache and file_path in cache:
             module = cache[file_path]
@@ -523,19 +657,17 @@ def ultraimport(file_path, objects_to_import=None, globals=None, preprocessor=No
             check_file_is_importable(file_path, file_path_orig)
             name = get_module_name(file_path)
 
-            preprocessor_combined = preprocessor
             # If we want to recruse, we need to add our recurse preprocessor
             # to any other preprocessors from the user
+            preprocessor_combined = None
             if recurse:
-                if preprocessor:
-                    def wrap_preprocessor(source):
-                        source = preprocessor(source)
-                        return transform_imports(source)
-                    preprocessor_combined = wrap_preprocessor
-                else:
-                    preprocessor_combined = transform_imports
+                def _(source, *args, **kwargs):
+                    if preprocessor:
+                        source = preprocessor(source, *args, **kwargs)
+                    return RewriteImport.transform_imports(source, *args, **kwargs)
+                preprocessor_combined = _
 
-            loader = SourceFileLoader(name, file_path, preprocessor=preprocessor_combined, cache=use_cache)
+            loader = SourceFileLoader(name, file_path, preprocessor=preprocessor_combined, use_cache=use_preprocessor_cache, cache_path_prefix=cache_path_prefix)
             spec = importlib.util.spec_from_loader(name, loader)
             module = importlib.util.module_from_spec(spec)
 
@@ -561,10 +693,16 @@ def ultraimport(file_path, objects_to_import=None, globals=None, preprocessor=No
                 #setattr(package, name, module)
 
             sys.modules[name] = module
+            if use_cache:
+                cache[file_path] = module
 
             try:
                 spec.loader.exec_module(module)
             except ImportError as e:
+
+                # If the import fails, we do not cache the module
+                del cache[file_path]
+
                 #print(e.msg, e.name, e.path)
                 if (e.msg == 'attempted relative import with no known parent package' or
                     e.msg == 'attempted relative import beyond top-level package'):
@@ -573,8 +711,10 @@ def ultraimport(file_path, objects_to_import=None, globals=None, preprocessor=No
                     if package:
                         raise ImportError(f'ultraimport found an import ambiguity when importing {file_path}.\nYou need to either increase the level of package=int or, if that does not help, set recurse=True.')
                     else:
-                        e.msg = f'ultraimport found an import ambiguity when importing {file_path}.\nYou need to either set the level of package=int or, if that does not help, set recurse=True.'
-                raise e
+                        #e.msg = f'ultraimport found an import ambiguity when importing {file_path}.\nYou need to either set the level of package=int or, if that does not help, set recurse=True.'
+                        raise ExecuteImportError('Unhandled, relative import statement found.', file_path=file_path_orig, file_path_resolved=file_path, from_exception=e).with_traceback(e.__traceback__) from None
+                else:
+                    raise e
 
 
         if objects_to_import:
@@ -590,7 +730,7 @@ def ultraimport(file_path, objects_to_import=None, globals=None, preprocessor=No
                 try:
                     values.append(getattr(module, item))
                 except AttributeError as e:
-                    raise Error(str(e), file_path=file_path_orig, file_path_resolved=file_path) from None
+                    raise ResolveImportError(str(e), file_path=file_path_orig, file_path_resolved=file_path) from None
 
             if globals:
                 globals.update(zip(objects_to_import, values))
@@ -605,9 +745,14 @@ def ultraimport(file_path, objects_to_import=None, globals=None, preprocessor=No
         if debug:
             print('module:', module)
 
-        cache[file_path] = module
-
         return module
+
+def reload():
+    reload_counter[0] += 1
+    reloaded = ultraimport(__file__, use_cache=False)
+    CallableModule = reloaded.CallableModule
+    cache = {}
+    return reloaded
 
 # Make ultraimport() directly callable after doing `import ultraimport`
 class CallableModule(types.ModuleType):
