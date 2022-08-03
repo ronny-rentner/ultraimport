@@ -1,4 +1,4 @@
-# Example Debug Library
+# Example Library with Debugging Support
 #
 # Don't run this library directly. Use the 'run.py' program.
 #
@@ -48,6 +48,7 @@ def second():
     if DEBUG: log.debug('Third debug print: %s', expensive_calculation())
 
 def third():
+    # Alternative optimization approach
     # This is looking better but more expensive and less
     # flexible and more code (and therefore more error prone).
     # Note: It's still much better than executing the expensive_calcualtion()

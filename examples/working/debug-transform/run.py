@@ -6,23 +6,11 @@
 #
 # DEBUG=1 python ./run.py
 
-
-# NOTE: Uncomment the following two lines of code to run this example without installing ultraimport.
-#       Changing sys.path is only necessary for demo purposes so you can just git clone the repository
-#       and directly run this example without installation.
-#       In real life, you'll install ultraimport as a system wide library and you can then use the
-#       normal import feature of Python without changing sys.path.
-
-#import sys, os
-#sys.path.insert(0, os.path.dirname(__file__) + '/../../..')
-
-
-
 # ultraimport needs to be installed and imported in the classical way.
 import ultraimport
 import re
 
-def preprocess(source):
+def preprocess(source, *args, **kwargs):
     print("Preprocessing...")
 
     # Here we use regular expressions to modify the source code but you can use
@@ -39,4 +27,5 @@ def preprocess(source):
 
 debug = ultraimport('__dir__/debug.py', preprocessor=preprocess)
 
-debug.debug()
+if __name__ == '__main__':
+    debug.debug()
