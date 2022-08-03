@@ -5,6 +5,8 @@ requires = ["setuptools", "wheel", "cython"]
 build-backend = 'setuptools.build_meta'
 
 [project]
+name = "ultraimport"
+version = "0.0.5"
 dependencies= [
     'astor; python_version < "3.9"'
 ]
