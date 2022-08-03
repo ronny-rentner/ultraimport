@@ -8,11 +8,11 @@ Get control over your imports -- no matter how you run your code.
 [![Run Python Tests](https://github.com/ronny-rentner/ultraimport/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/ronny-rentner/ultraimport/actions/workflows/ci.yml)
 
 **Features**:
-- No more ambiguity: Import any file from the file system as Python code.
-- Forget about packages and modules: It's just a file and you can import it.
+- Import any file from the file system as Python code
+- Works independent of your `sys.path`, independent of your current working directory, and independent of your top-level package
+- Works no matter if you run your code as a module or as a script
 - Preprocess code for optimizations (see [example](/examples/working/debug-transform))
 - Recursively rewrite subsequent relative import statements
-- Re-import the same file as often as you want
 - Dependency injection (see [example](/examples/working/dependency-injection))
 - Lazy loading (lazy imports for modules and callables)
 - Fix circular imports through lazy imports or dependency injection
@@ -22,7 +22,7 @@ Get control over your imports -- no matter how you run your code.
 
 **Is ultraimport supposed to replace the normal import statement?**
 
-No, not for now. You will continue to use the builtin import statements to import 3rd party libraries. `ultraimport` is meant to import files whose locations you control because they are located relatively to some other files.
+No. You will continue to use the builtin import statements to import 3rd party libraries installed system wide. `ultraimport` is meant to import local files whose locations you control because they are located relatively to some other files.
 
 ## Installation
 
@@ -311,6 +311,8 @@ to be added to the global namespace of the caller.
 `lazy`: if set to `True` and if `objects_to_import` is set to `None`, it will lazy import the module. If set to True and `objects_to_import` is a dict, the values of the dict must be the type of the object to lazy import from the module. Currently only the type `callable` is supported.
 
 `recurse`: if set to `True`, a built-in preprocessor is activated to transparently rewrite all `from .. import ..` statements (only relative imports) to ultraimport() calls. Use this mode if you have no control over the source code of the impored modules.
+
+`cache_path_prefix`: Directory for storing preprocessed files. If you use the preprocessor feature or if you use the option `recurse=True` (which in turn uses the preprocessor feature) you will have the option to store the resulting code after preprocessing. By default, they are stored in parallel to the original source code files, but this option allows to override to location. One common setting is `cache_path_prefix='__pycache__'` to store the processed files along with the bytecode files. __Note:__ Even when you change this directory, this will be hidden from Python. Towards Python, the preprocessed files will always look like they are in the same directory as the original source code files, even if they are not.
 
 ## Contributing
 
