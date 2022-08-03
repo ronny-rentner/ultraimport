@@ -3,3 +3,8 @@
 requires = ["setuptools", "wheel", "cython"]
 
 build-backend = 'setuptools.build_meta'
+
+[project]
+dependencies= [
+    'astor; python_version < "3.9"'
+]

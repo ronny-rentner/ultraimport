@@ -21,6 +21,10 @@
 import importlib, importlib.machinery, importlib.util
 import ast, collections, os, sys, contextlib, types, traceback
 
+if not hasattr(ast, 'unparse'):
+    import astor
+    ast.unparse = astor.to_source
+
 try:
     import astprettier
 except:
@@ -30,8 +34,8 @@ reload_counter = { 0: 0 }
 cache = {}
 import_ongoing_stack = {}
 
-#debug = True
 debug = False
+#debug = True
 
 CodeInfo = collections.namedtuple('CodeInfo', ['source', 'file_path', 'line', 'offset'])
 
@@ -659,7 +663,7 @@ def ultraimport(file_path, objects_to_import=None, globals=None, preprocessor=No
 
             # If we want to recruse, we need to add our recurse preprocessor
             # to any other preprocessors from the user
-            preprocessor_combined = None
+            preprocessor_combined = preprocessor
             if recurse:
                 def _(source, *args, **kwargs):
                     if preprocessor:
