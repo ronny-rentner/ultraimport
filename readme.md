@@ -220,7 +220,7 @@ When an import fails with ultraimport, either a direct `ultraimport()` call or a
 
 __Example 1:__
 Let's try to import the `mypackage.mymodule` module from our [recurse example](/examples/working/recurse), but we'll keep our current working directory (which is this repo checked out).
-```python
+```pycon
 >>> ultraimport('__dir__/examples/working/recurse/mypackage/mymodule')
 Traceback (most recent call last):
   File "<stdin>", line 1, in <module>
@@ -251,7 +251,7 @@ You'll get a hint on what was the resolved pathes and when could be the cause of
 
 __Example 2:__
 Let's correct the error from our first example and add the .py file extension:
-```python
+```pycon
 >>> ultraimport('__dir__/examples/working/recurse/mypackage/mymodule.py')
 Traceback (most recent call last):
   File "<stdin>", line 1, in <module>
@@ -293,15 +293,14 @@ We actually have two different options now, but let's follow the suggestion from
 
 ## Parameters
 
-`def ultraimport(file_path, objects_to_import = None, globals=None, preprocessor=None, package=None, caller=None, use_cache=True, lazy=False)`
+`ultraimport(file_path, objects_to_import=None, globals=None, preprocessor=None, package=None, caller=None, use_cache=True, lazy=False, recurse=False, inject=None, use_preprocessor_cache=True, cache_path_prefix=None)`
 
-`file_path`: path to a file to import, ie. *'my_lib.py'*. It can have any file extension. Please be aware that you must provide the file extension. The path can be relative or absolute. You can use the special string `__dir__` to refer to the directory of the caller which will be derived
-via inspetions. If you use advanced debugging tools (or want to save some CPU cycles) you might want to set `caller=__file__`.
+`file_path`: path to a file to import, ie. *'my_lib.py'*. It can have any file extension. Please be aware that you must provide the file extension. The path can be relative or absolute. You can use the special string `__dir__` to refer to the directory of the caller. If run from a Python REPL, the current working directory will be used for `__dir__`. If you use advanced debugging tools (or want to save some CPU cycles) you might want to set `caller=__file__`.
 
 `objects_to_import`: provide name of single object or the value `'*'` or an iterable of object names to import from `file_path`. If `lazy=True`, this should be a dict where the values declare the types of the imported objects.
 
 `globals`: add the `objects_to_import` to the dict provided. Usually called with `gloabls=globals()` if you want the imported module
-to be added to the globals of the caller.
+to be added to the global namespace of the caller.
 
 `preprocessor`: callable that takes the source code as an argument and that can return a modified version of the source code. Check out the [debug-transform example](/examples/working/debug-transform) on how to use the preprocessor.
 
