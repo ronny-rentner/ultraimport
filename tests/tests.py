@@ -73,8 +73,9 @@ class ultraimportTests(unittest.TestCase):
             self.assertTrue(pp_cache.is_file(),
                 f"Cached preprocessed file '{pp_cache}' should exist when using `use_preprocessor_cache=True`")
 
-    def test_lazy_load(self):
-        pass
+    # TODO
+    #def test_lazy_load(self):
+    #    pass
 
     @unittest.skipUnless(False, 'temporarily deactivate')
     @unittest.skipUnless(sys.version_info >= (3, 9), "requires Python >= 3.9")

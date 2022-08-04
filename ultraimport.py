@@ -37,6 +37,10 @@ import_ongoing_stack = {}
 debug = False
 #debug = True
 
+##################
+# ERROR HANDLING #
+##################
+
 CodeInfo = collections.namedtuple('CodeInfo', ['source', 'file_path', 'line', 'offset'])
 
 class ErrorRendererMixin():
@@ -78,8 +82,10 @@ class ErrorRendererMixin():
 
 
 
-class RewrittenImportError(ImportError):
+class RewrittenImportError(ImportError, ErrorRendererMixin):
     def __init__(self, message='', combine=None, code_info=None, object_to_import=None, *args):
+
+        super().__init__('')
 
         if combine and len(combine) > 0:
             for e in combine:
@@ -89,31 +95,47 @@ class RewrittenImportError(ImportError):
         if not combine or (len(combine) < 1):
             raise AttributeError("Missing errors of rewritten imports in 'combine' attribute")
 
-        message_code_info = ''
+        error_table = []
         if code_info:
             if type(code_info) is not CodeInfo:
                 code_info = CodeInfo(*code_info)
-            message_code_info = f"""
-A relative import statement was transparently rewritten and failed.
 
-Original file_path: '{code_info.file_path}', line {code_info.line}:{code_info.offset}
-Original source code: '{code_info.source}'
-"""
+            error_table.extend([
+                ('Original source file', f"'{code_info.file_path}', line {code_info.line}:{code_info.offset}"),
+                ('Original source code', code_info.source),
+            ])
 
-        files = '\n'.join(f' ● {e.file_path_resolved}\n   (reason: {e.reason})' for e in combine)
-        message = f"""
+        exc_type, exc_value, exc_traceback = sys.exc_info()
+        frame = traceback.extract_tb(exc_traceback)[0]
+        error_table.extend([
+            ('Preprocessed source file', f"'{frame.filename}', line {frame.lineno}"),
+        ])
 
-┌────────────────────────┐
-│ Rewritten Import Error │
-└────────────────────────┘
-{message_code_info}
-When importing '{object_to_import}', it could not been found in any of the files:
-{files}
-"""
+        error_table.append(('Error details', f"Could not find resource '{object_to_import}' in any of the following files:"))
+        for e in combine:
+            error_table.append(('', f'- {e.file_path_resolved}'))
+            error_table.append(('', f'  (Possible reason: {e.reason})'))
 
-        super().__init__('')
+        header = self.render_header('Rewritten Import Error', 'A relative import statement was transparently rewritten and failed.')
+        body = self.render_table(error_table)
 
-        self.msg = message
+        suggestion = self.render_suggestion('Check if the required package or module really exists in your file system.',
+            'If you know the path but cannot change the import statement, use dependency injection to inject the resource.')
+
+        self.msg = f"{header}\n{body}{suggestion}"
+
+    def find_cause(self, tb=None, depth=0):
+        frame = None
+        while True:
+            try:
+                frame = sys._getframe(depth)
+                depth += 1
+                if frame.f_code.co_filename == __file__ or '<frozen importlib._bootstrap' in frame.f_code.co_filename:
+                    continue
+            except ValueError as exc:
+                break
+        return frame
+
 
 class ExecuteImportError(ImportError, ErrorRendererMixin):
     def __init__(self, message=None, file_path=None, file_path_resolved=None, from_exception=None, *args):
@@ -177,74 +199,9 @@ class ResolveImportError(ImportError, ErrorRendererMixin):
         self.msg = f"{header}\n{body}{suggestion}"
 
 
-class Error(ImportError, ErrorRendererMixin):
-    def __init__(self, message=None, file_path=None, file_path_resolved=None, from_exception=None, *args):
-
-        super().__init__()
-
-        # Save file_path for later analyzation
-        self.file_path = file_path
-        self.file_path_resolved = file_path_resolved
-        # Store the original reason/message for later
-        self.reason = message
-
-        suggestion = ""
-        main_error = ""
-        error_table = []
-        if file_path_resolved and not file_path_resolved.endswith('.py'):
-            maybe_path = file_path_resolved + '.py'
-            if os.path.exists(maybe_path):
-                suggestion += f"\n ╲ Did you mean to import '{maybe_path}'?\n ╱ You need to add the file extension '.py' to the file_path."
-
-        elif (from_exception and from_exception.msg == 'attempted relative import with no known parent package'):
-            suggestion += f"\n ╲ There is possibly a chain of relative imports. Change them to ultraimports() or\n ╱ add the parameter `recurse=True` to activate automatic rewriting of further relative imports."
-
-            #self.__traceback__ == from_exception.__traceback__
-
-            #cause = self.find_cause(from_exception.__traceback__)
-
-            # Last frame on the stack
-            frame = traceback.extract_tb(from_exception.__traceback__)[-1]
-
-            error_table.append(('Problematic code', frame.filename))
-            error_table.append(('Error happend in', frame.lineno))
-            error_table.append(('Name', frame.name))
-            error_table.append(('Line', frame.line))
-
-            main_error = f"\nA subsequent relative import statement was found.\n{self.render_table(error_table)}\n"
-
-        message = f"""
-
-┌────────────────────┐
-│ Ultra Import Error │
-└────────────────────┘
-{main_error}
-  Import file_path | {self.file_path}
-Resolved file_path | {self.file_path_resolved}
-                   | (Possible reason: {self.reason})
-
-{suggestion}
-"""
-
-        self.msg = message
-
-    def find_cause(self, tb=None, depth=0):
-        frame = None
-        while True:
-            try:
-                frame = sys._getframe(depth)
-                depth += 1
-                if frame.f_code.co_filename == __file__ or '<frozen importlib._bootstrap' in frame.f_code.co_filename:
-                    continue
-            except ValueError as exc:
-                break
-        return frame
-
-    #def __repr__(self):
-    #    return 'REPR'
-
-    #def __str__(self):
-    #    return 'STR'
+################
+# LAZY LOADING #
+################
 
 class LazyCass():
     """ Lazily-loaded class that triggers module loading on access """
@@ -678,6 +635,7 @@ def ultraimport(file_path, objects_to_import=None, globals=None, preprocessor=No
             # Inject ultraimport module
             module.ultraimport = sys.modules[__name__]
 
+            # Inject other dependencies
             if inject:
                 for k, v in inject.items():
                     setattr(module, k, v)
@@ -705,7 +663,8 @@ def ultraimport(file_path, objects_to_import=None, globals=None, preprocessor=No
             except ImportError as e:
 
                 # If the import fails, we do not cache the module
-                del cache[file_path]
+                if file_path in cache:
+                    del cache[file_path]
 
                 #print(e.msg, e.name, e.path)
                 if (e.msg == 'attempted relative import with no known parent package' or

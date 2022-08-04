@@ -147,7 +147,7 @@ The main problem with the orignal Python imports is that they are ambiguous. As 
 you work on source code files in the file system. But Python doesn't import source code files
 from the file system. It imports packages and modules. The structure of the directories and files
 in your file system is somehow mapped to the structure of packages and modules in Python,
-but in an *ambiguous* way with external dependencies to thinkgs like your current working directory.
+but in an *ambiguous* way with external dependencies to things like your current working directory.
 This is bad, because you need to write more code to handle these external dependencies that you never wanted.
 All the information you have about your source code files is information about their relative
 location to each other in the file system.
@@ -247,7 +247,7 @@ An import file could not be found or not be read.
 
 ```
 
-You'll get a hint on what was the resolved pathes and when could be the cause of the error. In this case it's a missing file extension because `ultraimport()` imports files.
+You'll get a hint on what was the resolved path and what could be the cause of the error. In this case it's a missing file extension because `ultraimport()` imports files.
 
 __Example 2:__
 Let's correct the error from our first example and add the .py file extension:
@@ -288,8 +288,44 @@ Ok, now it found the file `mymodule.py` but in there is another relative import 
 
 __Example 3:__
 We actually have two different options now, but let's follow the suggestion from above and use `recurse=True`.
+```pycon
+>>> ultraimport('__dir__/examples/working/recurse/mypackage/mymodule.py', recurse=True)
+Traceback (most recent call last):
+  File "<stdin>", line 1, in <module>
+  File "/home/ronny/Projects/py/ultraimport/ultraimport.py", line 723, in __call__
+    return ultraimport(*args, caller_level=2, **kwargs)
+  File "/home/ronny/Projects/py/ultraimport/ultraimport.py", line 680, in ultraimport
+    raise e
+  File "/home/ronny/Projects/py/ultraimport/ultraimport.py", line 662, in ultraimport
+    spec.loader.exec_module(module)
+  File "<frozen importlib._bootstrap_external>", line 790, in exec_module
+  File "<frozen importlib._bootstrap>", line 228, in _call_with_frames_removed
+  File "/home/ronny/Projects/py/ultraimport/examples/working/recurse/mypackage/mymodule__preprocessed__.py", line 23, in <module>
+    raise ultraimport.RewrittenImportError(code_info=('from . import log, other_logger as log2', '/home/ronny/Projects/py/ultraimport/examples/working/recurse/mypackage/mymodule.py', 6, 0), object_to_import='other_logger', combine=[e, e2, e3]) from None
+ultraimport.RewrittenImportError: 
 
+┌────────────────────────┐
+│ Rewritten Import Error │
+└────────────────────────┘
 
+A relative import statement was transparently rewritten and failed.
+
+     Original source file │ '/home/ronny/Projects/py/ultraimport/examples/working/recurse/mypackage/mymodule.py', line 6:0
+     Original source code │ from . import log, other_logger as log2
+ Preprocessed source file │ '/home/ronny/Projects/py/ultraimport/examples/working/recurse/mypackage/mymodule__preprocessed__.py', line 21
+            Error details │ Could not find resource 'other_logger' in any of the following files:
+                          │ - /home/ronny/Projects/py/ultraimport/examples/working/recurse/mypackage/__init__.py
+                          │   (Possible reason: module '__init__' has no attribute 'other_logger')
+                          │ - /home/ronny/Projects/py/ultraimport/examples/working/recurse/mypackage/other_logger/__init__.py
+                          │   (Possible reason: File does not exist.)
+                          │ - /home/ronny/Projects/py/ultraimport/examples/working/recurse/mypackage/other_logger.py
+                          │   (Possible reason: File does not exist.)
+
+ ╲ Check if the required package or module really exists in your file system.
+ ╱ If you know the path but cannot change the import statement, use dependency injection to inject the resource.
+```
+
+In the error details, we see that the resource 'other_logger' cannot be found and we also see a list of files that Python has searched. We could now check where this other_logger actually is.
 
 ## Parameters
 
