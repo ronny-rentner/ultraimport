@@ -1,7 +1,7 @@
 import unittest, subprocess, sys, os, tempfile, pathlib
 
 # So we can find ultraimport without installing it
-sys.path.insert(0, '..')
+sys.path.insert(0, f"{os.path.dirname(__file__)}{os.sep}..{os.sep}..{os.sep}")
 
 import ultraimport
 
@@ -10,10 +10,11 @@ class ultraimportTests(unittest.TestCase):
     def setUp(self):
         pass
 
-    def exec(self, filepath):
+    def exec(self, file_path):
         env = os.environ.copy()
+        file_path = f"{os.path.dirname(__file__)}{os.sep}..{os.sep}{file_path}"
         env["PYTHONPATH"] = os.path.dirname(__file__) + os.path.sep + '../'
-        ret = subprocess.run([sys.executable, filepath],
+        ret = subprocess.run([sys.executable, file_path],
                 stdout=subprocess.PIPE, stderr=subprocess.STDOUT, env=env)
         ret.stdout = ret.stdout.replace(b'\r\n', b'\n');
         return ret
@@ -23,14 +24,14 @@ class ultraimportTests(unittest.TestCase):
         with self.assertRaises(ultraimport.ResolveImportError) as cm:
             ultraimport(file_path)
         message = str(cm.exception)
-        self.assertIn(file_path, message)
+        self.assertIn(file_path, message, 'file_path must be repeated in error message')
         self.assertIn('File does not exist', message)
         self.assertTrue(hasattr(cm.exception, 'file_path'))
         self.assertTrue(hasattr(cm.exception, 'file_path_resolved'))
 
     def test_file_not_found_with_suggestion(self):
         # Missing file ending .py
-        file_path = os.path.normpath("examples/working/myprogram/run")
+        file_path = f"__dir__{os.sep}..{os.sep}{os.path.normpath('examples/working/myprogram/run')}"
         # This file_path will be suggested
         file_path2 = os.path.normpath("examples/working/myprogram/run.py")
         with self.assertRaises(ultraimport.ResolveImportError) as cm:
@@ -47,7 +48,8 @@ class ultraimportTests(unittest.TestCase):
         file_path = "examples/working/myprogram/run.py"
         ret = self.exec(file_path)
         self.assertEqual(ret.returncode, 0, f'Running {file_path} did return with an error: {ret}')
-        self.assertEqual(ret.stdout, b"""I did something\ncache store: I did something\ncache store: Something\n""")
+        self.assertEqual(ret.stdout, b"""I did something\ncache store: I did something\n""")
+
 
     def test_recurse_preprocessor_cache_path_prefix(self):
         with tempfile.TemporaryDirectory() as tmp_dir:

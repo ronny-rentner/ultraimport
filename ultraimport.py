@@ -527,21 +527,28 @@ def get_module_name(file_path):
     return name.replace('-', '_').replace('.', '_')
 
 def get_package_name(file_path, package):
+    path = os.path.abspath(file_path if os.path.isdir(file_path) else os.path.dirname(file_path))
     if type(package) == str:
-        path = os.path.abspath(os.path.dirname(file_path))
-        return package, path
+        rest, dot, name = package.rpartition('.')
+        parent_package = None
+        if rest:
+            parent_package = get_package_name('', rest)
+        package_module = create_ns_package(package, path)
+        if parent_package:
+            package_module.__package__ = parent_package
+        return package, path, package_module
     elif type(package) == int:
-        path = os.path.abspath(os.path.dirname(file_path))
         package = '.'.join(os.path.dirname(os.path.abspath(file_path)).split(os.sep)[-package:])
-        return package, path
-    return None, None
+        return get_package_name(path, package)
+    return None, None, None
 
-def create_virtual_package(package_name, package_path):
-    package = types.ModuleType(package_name)
-    package.__package__ = package_name
-    package.__path__ = [ package_path ]
+def create_ns_package(package_name, package_path):
+    loader = importlib._bootstrap_external._NamespaceLoader('loader', [package_path], None)
+    spec = importlib.util.spec_from_loader(package_name, loader)
+    package = importlib.util.module_from_spec(spec)
+    package.__path__ = loader._path
     sys.modules[package_name] = package
-    #module.__package__ = package_name
+    return package
 
 def find_existing_module_by_path(file_path):
     for name, module in sys.modules.items():
@@ -656,19 +663,14 @@ def ultraimport(file_path, objects_to_import=None, globals=None, preprocessor=No
                 for k, v in inject.items():
                     setattr(module, k, v)
 
-            package_name, package_path = get_package_name(file_path, package)
+            package_name, package_path, package_module = get_package_name(file_path, package)
             #print('__package__', package_name)
             #print('__path__', package_path)
             if package_name:
-                #import pkg_resources
-                #pkg_resources.declare_namespace(package_name)
-                #print('declared', sys.modules[package_name])
-                package = CallableModule(package_name)
-                package.__package__ = package_name
-                package.__path__ = [ package_path ]
-                sys.modules[package_name] = package
+                #package = create_ns_package(package_name, package_path)
                 module.__package__ = package_name
                 #setattr(package, name, module)
+                setattr(package_module, __name__, module)
 
             sys.modules[name] = module
             if use_cache:
