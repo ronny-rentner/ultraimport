@@ -284,7 +284,7 @@ class SourceFileLoader(importlib.machinery.SourceFileLoader):
             os.makedirs(dir_name)
 
     def preprocess(self, file_path):
-        print('PREP', file_path, self.use_cache, time.time())
+        #print('PREP', file_path, self.use_cache, time.time())
         self.code = self.get_data(file_path, direct=True)
         self.code = self.preprocessor(self.code, file_path=file_path)
 

@@ -1,12 +1,28 @@
 [build-system]
 
-requires = ["setuptools", "wheel", "cython"]
+requires = ["setuptools", "setuptools-scm", "wheel", "cython"]
 
 build-backend = 'setuptools.build_meta'
 
 [project]
 name = "ultraimport"
+readme = "readme.md"
+license = { file = "license.txt" }
 version = "0.0.5"
 dependencies= [
     'astor; python_version < "3.9"'
 ]
+
+[[authors]]
+name = "Ronny Rentner"
+email = "ultraimport.code@ronny-rentner.de"
+
+[project.urls]
+main = "https://github.com/ronny-rentner/ultraimport"
+
+[tool.setuptools]
+# FIXME: Does not work, the files are still included
+include-package-data = false
+packages = ["ultraimport"]
+[tool.setuptools.package-dir]
+ultraimport = "."
