@@ -19,7 +19,9 @@
 #
 
 import importlib, importlib.machinery, importlib.util
-import ast, collections, os, sys, contextlib, types, traceback
+import ast, collections, os, sys, contextlib, types, traceback, time
+
+__all__ = ['ultraimport']
 
 if not hasattr(ast, 'unparse'):
     import astor
@@ -273,7 +275,6 @@ class SourceFileLoader(importlib.machinery.SourceFileLoader):
             original = os.stat(file_path)
             if original.st_mtime > preprocessed.st_mtime:
                 self.preprocess(file_path)
-
         else:
             self.preprocess(file_path)
 
@@ -283,18 +284,20 @@ class SourceFileLoader(importlib.machinery.SourceFileLoader):
             os.makedirs(dir_name)
 
     def preprocess(self, file_path):
-        #print('PREP', file_path, self.use_cache)
+        print('PREP', file_path, self.use_cache, time.time())
         self.code = self.get_data(file_path, direct=True)
         self.code = self.preprocessor(self.code, file_path=file_path)
 
         if not self.use_cache:
+            if os.path.exists(self.preprocess_file_path):
+                os.remove(self.preprocess_file_path)
             return
 
         self.ensure_dir(self.preprocess_file_path)
 
         # Write processed code back for caching
         with open(self.preprocess_file_path, 'wb') as f:
-            f.write(f"# NOTE: This file was automatically generated from:\n# {file_path}\n# DO NOT CHANGE DIRECTLY!\n".encode())
+            f.write(f"# NOTE: This file was automatically generated from:\n# {file_path}\n# DO NOT CHANGE DIRECTLY! {time.time()}\n".encode())
             f.write(self.code)
 
             #os.utime(self.preprocess_file_path, (original['mtime'], original['mtime']))
@@ -390,22 +393,30 @@ class RewriteImport(ast.NodeTransformer):
         )
 
     def gen_keyword(self, name, value):
-        if isinstance(value, ast.Tuple):
+        if isinstance(value, ast.Tuple) or isinstance(value, ast.Call):
             return ast.keyword(arg=name, value=value)
         return ast.keyword(arg=name, value=ast.Constant(value=value, kind=None))
 
+    def gen_call(self, name, args=[], keywords=[]):
+        return ast.Call(func=ast.Name(id=name, ctx=ast.Load()), args=args, keywords=keywords)
+
     def gen_import_call(self, file_path, import_elts=None):
+        keywords = [
+            self.gen_keyword('recurse', True),
+            # TODO: Remove and use cache
+            #self.gen_keyword('use_cache', False),
+        ]
+
+        if import_elts == '*':
+            keywords.append(self.gen_keyword('globals', self.gen_call('globals')))
+
         return ast.Call(
             func=ast.Name(id='ultraimport', ctx=ast.Load()),
             args=[
                 ast.Constant(value=file_path, kind=None),
                 self.gen_keyword('objects_to_import', import_elts)
             ],
-            keywords=[
-                self.gen_keyword('recurse', True),
-                # TODO: Remove and use cache
-                #self.gen_keyword('use_cache', False),
-            ],
+            keywords=keywords
         )
 
     def gen_code_info(self, source, file_path, line, offset):
@@ -441,7 +452,9 @@ class RewriteImport(ast.NodeTransformer):
         )
 
     def gen_import(self, alias, module_path, object_name=None):
-        if object_name:
+        if object_name == '*':
+            return self.gen_import_call(module_path, object_name)
+        elif object_name:
             objects_tuple = self.gen_objects_tuple([object_name])
             aliasses_tuple = self.gen_aliasses_tuple([alias])
             call_node = self.gen_import_call(module_path, objects_tuple)
@@ -553,6 +566,9 @@ def ultraimport(file_path, objects_to_import=None, globals=None, preprocessor=No
     if debug:
         print("ultraimport", file_path)
 
+    if objects_to_import == '*' and globals == None:
+        raise ValueError("Cannot import '*' without having globals set.")
+
     file_path_orig = file_path
 
     # We are supposed to replace the string `__dir__` in file_path with the directory of the caller.
@@ -662,10 +678,6 @@ def ultraimport(file_path, objects_to_import=None, globals=None, preprocessor=No
                 spec.loader.exec_module(module)
             except ImportError as e:
 
-                # If the import fails, we do not cache the module
-                if file_path in cache:
-                    del cache[file_path]
-
                 #print(e.msg, e.name, e.path)
                 if (e.msg == 'attempted relative import with no known parent package' or
                     e.msg == 'attempted relative import beyond top-level package'):
@@ -678,7 +690,10 @@ def ultraimport(file_path, objects_to_import=None, globals=None, preprocessor=No
                         raise ExecuteImportError('Unhandled, relative import statement found.', file_path=file_path_orig, file_path_resolved=file_path, from_exception=e).with_traceback(e.__traceback__) from None
                 else:
                     raise e
-
+            finally:
+                # If the import fails, we do not cache the module
+                if file_path in cache:
+                    del cache[file_path]
 
         if objects_to_import:
             return_single = False
@@ -710,11 +725,14 @@ def ultraimport(file_path, objects_to_import=None, globals=None, preprocessor=No
 
         return module
 
-def reload():
+def reload(globals=None):
+    """ Reload ultraimport module """
     reload_counter[0] += 1
     reloaded = ultraimport(__file__, use_cache=False)
     CallableModule = reloaded.CallableModule
     cache = {}
+    if globals and 'ultraimport' in globals:
+        globals['ultraimport'] = reloaded
     return reloaded
 
 # Make ultraimport() directly callable after doing `import ultraimport`

@@ -266,7 +266,7 @@ Traceback (most recent call last):
   File "<frozen importlib._bootstrap_external>", line 790, in exec_module
   File "<frozen importlib._bootstrap>", line 228, in _call_with_frames_removed
   File "/home/ronny/Projects/py/ultraimport/examples/working/recurse/mypackage/mymodule.py", line 12, in <module>
-    from .logger import log, log as log2
+    from .logger import log, other_logger as log2
 ultraimport.ExecuteImportError: 
 
 ┌──────────────────────┐
@@ -277,7 +277,7 @@ An import file could be found and read, but an error happened while executing it
 
      Source file │ /home/ronny/Projects/py/ultraimport/examples/working/recurse/mypackage/mymodule.py, line 12
       Happend in │ <module>
-     Source code │ from .logger import log, log as log2
+     Source code │ from .logger import log, other_logger as log2
  Possible reason │ A subsequent, relative import statement was found, but not handled.
  Original errror │ "attempted relative import with no known parent package"
 
