@@ -14,7 +14,7 @@ Get control over your imports -- no matter how you run your code.
 - Works independent of your `sys.path`, independent of your current working directory, and independent of your top-level package
 - Works no matter if you run your code as a module or as a script
 - Preprocess code for optimizations (see [example](/examples/working/debug-transform))
-- Recursively rewrite subsequent relative import statements
+- Recursively rewrite subsequent relative import statements (see [example](/examples/working/recurse))
 - Dependency injection (see [example](/examples/working/dependency-injection))
 - Lazy loading (lazy imports for modules and callables)
 - Fix circular imports through lazy imports or dependency injection
@@ -24,7 +24,7 @@ Get control over your imports -- no matter how you run your code.
 
 **Is ultraimport supposed to replace the normal import statement?**
 
-No. You will continue to use the builtin import statements to import 3rd party libraries installed system wide. `ultraimport` is meant to import local files whose locations you control because they are located relatively to some other files.
+No! You will continue to use the builtin import statements to import 3rd party libraries which have been installed system wide. `ultraimport` is meant to import local files whose locations you control because they are located relatively to some other files.
 
 ## Installation
 
@@ -83,7 +83,7 @@ else:
 With `ultraimport`, no matter how you call run.py, it will always find log.py.
 
 
-## The Python Import Issue
+## The Issue: Relative Import in Python
 
 Classically, to do a relative import, your run.py would look like this:
 ```python
@@ -110,7 +110,7 @@ Traceback (most recent call last):
 ImportError: attempted relative import with no known parent package
 ```
 
-Python programs or scripts can be executed in a number of different ways:
+Python programs or scripts can be executed in a number of different ways and with some of the ways, it even works:
 ```shell
 # Broken
 python ~/myprogram/run.py
@@ -149,7 +149,7 @@ The main problem with the orignal Python imports is that they are ambiguous. As 
 you work on source code files in the file system. But Python doesn't import source code files
 from the file system. It imports packages and modules. The structure of the directories and files
 in your file system is somehow mapped to the structure of packages and modules in Python,
-but in an *ambiguous* way with external dependencies to things like your current working directory.
+but in an *ambiguous* way with additional, external dependencies to things like your current working directory.
 This is bad, because you need to write more code to handle these external dependencies that you never wanted.
 All the information you have about your source code files is information about their relative
 location to each other in the file system.
@@ -170,16 +170,9 @@ import ultraimport
 # `__dir__` refers to the directory where run.py is in.
 ultraimport('__dir__/log.py', 'logger', globals=globals())
 
-# Lazy import the cache module. On the first access to any attribute of
-# cache, the real cache module will be loaded
-cache = ultraimport('__dir__/cache.py', lazy=True)
-
 def main():
     # do something
-
     logger('I did something')
-
-    cache.store('Something')
 
 if __name__ == '__main__':
     main()

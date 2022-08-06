@@ -99,5 +99,12 @@ class ultraimportTests(unittest.TestCase):
         self.assertEqual(ret.returncode, 0, f'Running {file_path} did return with an error: {ret}')
         self.assertEqual(ret.stdout, b"injected logger: worker.py is doing some work\n")
 
+    def test_example_impossible_filename(self):
+        file_path = "examples/working/impossible-filename/run.py"
+        ret = self.exec(file_path)
+        self.assertEqual(ret.returncode, 0, f'Running {file_path} did return with an error: {ret}')
+        self.assertEqual(ret.stdout, b"Hello world\n")
+
+
 if __name__ == '__main__':
     unittest.main()
