@@ -3,7 +3,7 @@ import ultraimport
 # Lazy load the logger by specifying the objects_to_import (2nd parameter)
 # as a dict with the type as the value. This is necessary to resolve the cyclic
 # dependency because the cache is using the logger and the logger is using the cache.
-logger = ultraimport('__dir__/log.py', {'logger': callable}, lazy=False)
+logger = ultraimport('__dir__/log.py', {'logger': callable}, lazy=True)
 
 data = []
 

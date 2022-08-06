@@ -21,6 +21,12 @@
 import importlib, importlib.machinery, importlib.util
 import ast, collections, os, sys, contextlib, types, traceback, time
 
+try:
+    from rich.traceback import install
+    install(show_locals=False)
+except:
+    pass
+
 __all__ = ['ultraimport']
 
 if not hasattr(ast, 'unparse'):
@@ -82,7 +88,16 @@ class ErrorRendererMixin():
     def render_suggestion(self, line1, line2):
         return f"\n\n ╲ {line1}\n ╱ {line2}\n"
 
-
+    def find_frame(self, frames, depth=1):
+        while True:
+            try:
+                frame = frames[0 - depth]
+                depth += 1
+                if frame.filename == __file__ or '<frozen importlib._bootstrap' in frame.filename:
+                    continue
+            except IndexError as exc:
+                break
+            return frame
 
 class RewrittenImportError(ImportError, ErrorRendererMixin):
     def __init__(self, message='', combine=None, code_info=None, object_to_import=None, *args):
@@ -110,7 +125,7 @@ class RewrittenImportError(ImportError, ErrorRendererMixin):
         exc_type, exc_value, exc_traceback = sys.exc_info()
         frame = traceback.extract_tb(exc_traceback)[0]
         error_table.extend([
-            ('Preprocessed source file', f"'{frame.filename}', line {frame.lineno}"),
+            ('Preprocessed source file', f"{frame.filename}:{frame.lineno}"),
         ])
 
         error_table.append(('Error details', f"Could not find resource '{object_to_import}' in any of the following files:"))
@@ -138,22 +153,49 @@ class RewrittenImportError(ImportError, ErrorRendererMixin):
                 break
         return frame
 
+class CircularImportError(ImportError, ErrorRendererMixin):
+    def __init__(self, message=None, file_path=None, file_path_resolved=None, *args):
+
+        super().__init__()
+
+        header = self.render_header('Circular Import Error', 'An unresolved circular import was detected while importing a file.')
+
+        error_table = []
+        suggestion = ''
+
+        import pprint
+        pprint.pprint(traceback.extract_stack())
+
+        frame = self.find_frame(frames=traceback.extract_stack())
+        error_table.extend([
+            ('Source file', f"{frame.filename}:{frame.lineno}"),
+            ('Happend in', frame.name),
+            ('Source code', frame.line),
+            ('Import file_path', file_path),
+            ('Resolved file_path', file_path_resolved),
+        ])
+
+        suggestion = self.render_suggestion('You can use the ultraimport() parameter `lazy=True` to resolve circular dependencies.',
+            'This will only actually load imported modules and callables when they are used for the first time.')
+
+        body = self.render_table(error_table)
+
+        self.msg = f"{header}\n{body}{suggestion}"
 
 class ExecuteImportError(ImportError, ErrorRendererMixin):
-    def __init__(self, message=None, file_path=None, file_path_resolved=None, from_exception=None, *args):
+    def __init__(self, message=None, file_path=None, file_path_resolved=None, from_exception=None, depth=2, *args):
 
         super().__init__()
 
         header = self.render_header('Execute Import Error', 'An import file could be found and read, but an error happened while executing it.')
+        suggestion = ''
 
         frame = traceback.extract_tb(from_exception.__traceback__)[-1]
         error_table = [
-            ('Source file', f"{frame.filename}, line {frame.lineno}"),
+            ('Source file', f"{frame.filename}:{frame.lineno}"),
             ('Happend in', frame.name),
             ('Source code', frame.line)
         ]
-
-        suggestion = ''
 
         if from_exception and from_exception.msg == 'attempted relative import with no known parent package':
             error_table.append(('Possible reason', 'A subsequent, relative import statement was found, but not handled.'))
@@ -623,7 +665,7 @@ def ultraimport(file_path, objects_to_import=None, globals=None, preprocessor=No
 
     if file_path in import_ongoing_stack:
         # TODO: Come up with better error message how to handle circular import errors
-        raise ImportError(f"Circular import detected for '{file_path}' (resolved path: '{os.path.abspath(file_path)}')")
+        raise CircularImportError(file_path=file_path_orig, file_path_resolved=file_path)
 
     with contextlib.ExitStack() as cleaner:
         cleaner.callback(import_ongoing_stack.pop, file_path, None)
