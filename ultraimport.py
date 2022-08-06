@@ -592,7 +592,7 @@ def ultraimport(file_path, objects_to_import=None, globals=None, preprocessor=No
 
     file_path = os.path.abspath(file_path)
 
-    if lazy or (type(objects_to_import) == dict):
+    if lazy and (type(objects_to_import) == dict):
         # Lazy load the whole module
         if not objects_to_import:
             importer = lambda: ultraimport(file_path, caller=caller, use_cache=use_cache)
@@ -708,6 +708,11 @@ def ultraimport(file_path, objects_to_import=None, globals=None, preprocessor=No
             values = []
             for item in objects_to_import:
                 try:
+                    attr = getattr(module, item)
+                    # When it's a dict, we expect the types of the imports to be the values
+                    if (type(objects_to_import) == dict):
+                        if not isinstance(attr, objects_to_import[item]):
+                            raise TypeError(f"Import type mismatch, expected '{item}' to be of type {objects_to_import[item]} but got {type(attr)}")
                     values.append(getattr(module, item))
                 except AttributeError as e:
                     raise ResolveImportError(str(e), file_path=file_path_orig, file_path_resolved=file_path) from None
