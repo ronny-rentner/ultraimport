@@ -1,8 +1,8 @@
 # ultraimport: Advanced Usage
 
-Check the [ultraimport Github Page](https://github.com/ronny-rentner/ultraimport) for an overview.
+Check the [ultraimport Github Page](https://github.com/ronny-rentner/ultraimport) for an overview and basic usage information.
 
-## Import impossible filename and directory
+### 1. Import impossible filenames and directory names
 
 With ultraimport, you can import from any file or directory, even if it contains spaces or dashes or if the file name contains any other file extension.
 
@@ -15,9 +15,9 @@ import ultraimport
 ultraimport('__dir__/im possible-dir ectory/my lib.python3')
 ```
 
-## Typed imports
+### 2. Typed imports
 
-Get type safty by specifying what type you expect a certain imported object to be.
+Get type safety by specifying what type you expect a certain imported object to be.
 
 See [examples/working/typed-imports](/examples/working/typed-imports)
 
@@ -43,3 +43,6 @@ except TypeError as e:
     print(e)
 ```
 
+### 3. Preprocessing
+
+See [examples/working/debug-transformation](/examples/working/debug-transformation)
