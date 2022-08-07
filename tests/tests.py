@@ -44,13 +44,6 @@ class ultraimportTests(unittest.TestCase):
         with self.assertRaises(NameError):
             ultraimport('__dir__/../examples/broken/syntax_error.py')
 
-    def test_example_myprogram(self):
-        file_path = "examples/working/myprogram/run.py"
-        ret = self.exec(file_path)
-        self.assertEqual(ret.returncode, 0, f'Running {file_path} did return with an error: {ret}')
-        self.assertEqual(ret.stdout, b"""I did something\ncache store: I did something\n""")
-
-
     def test_recurse_preprocessor_cache_path_prefix(self):
         with tempfile.TemporaryDirectory() as tmp_dir:
             code_file = f'{tmp_dir}{os.sep}code.py'
@@ -79,7 +72,6 @@ class ultraimportTests(unittest.TestCase):
     #def test_lazy_load(self):
     #    pass
 
-    @unittest.skipUnless(False, 'temporarily deactivate')
     @unittest.skipUnless(sys.version_info >= (3, 9), "requires Python >= 3.9")
     def test_example_mypackage(self):
         file_path = "examples/working/mypackage/run.py"
@@ -93,6 +85,12 @@ class ultraimportTests(unittest.TestCase):
             b"Running myotherfunction() from myothermodule: hello from submodule.py\n"
             b"submodule end\n")
 
+    def test_example_myprogram(self):
+        file_path = "examples/working/myprogram/run.py"
+        ret = self.exec(file_path)
+        self.assertEqual(ret.returncode, 0, f'Running {file_path} did return with an error: {ret}')
+        self.assertEqual(ret.stdout, b"""I did something\ncache store: I did something\n""")
+
     def test_example_dependency_injection(self):
         file_path = "examples/working/dependency-injection/run.py"
         ret = self.exec(file_path)
@@ -104,6 +102,12 @@ class ultraimportTests(unittest.TestCase):
         ret = self.exec(file_path)
         self.assertEqual(ret.returncode, 0, f'Running {file_path} did return with an error: {ret}')
         self.assertEqual(ret.stdout, b"Hello world\n")
+
+    def test_example_dynamic_namespace(self):
+        file_path = "examples/working/dynamic_namespace/run.py"
+        ret = self.exec(file_path)
+        self.assertEqual(ret.returncode, 0, f'Running {file_path} did return with an error: {ret}')
+        self.assertIn("<module 'dynamic-namespace.lib' (namespace)>", ret.stdout)
 
 
 if __name__ == '__main__':

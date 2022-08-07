@@ -2,7 +2,7 @@
 
 Get control over your imports -- no matter how you run your code.
 
-**Warning: This is an early hack. There are only few unit tests. Maybe not stable!**
+**Warning: This is an early hack. There are only few unit tests, yet. Maybe not stable!**
 
 [![PyPI Package](https://img.shields.io/pypi/v/ultradict.svg)](https://pypi.org/project/ultraimport)
 [![Run Tests](https://github.com/ronny-rentner/ultraimport/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/ronny-rentner/ultraimport/actions/workflows/ci.yml)
@@ -26,6 +26,8 @@ Get control over your imports -- no matter how you run your code.
 
 No! You will continue to use the builtin import statements to import 3rd party libraries which have been installed system wide. `ultraimport` is meant to import local files whose locations you control because they are located relatively to some other files.
 
+**How does it work?**
+
 ## Installation
 
 Install system wide:
@@ -34,22 +36,23 @@ pip install ultraimport
 ```
 
 Install a local development version:
-```
+```shell
 git clone https://github.com/ronny-rentner/ultraimport.git
 pip install -e ./ultraimport
 ```
 
 ## How To Use?
 
-*Note: You can find this and other examples in the [examples](/examples) folder.*
+*Note: You can find [this](/examples/working/myprogram) and other examples in the [examples/working/](/examples/working) folder.*
 
 Let's assume your new program in the folder `~/myprogram` looks like this:
 ```shell
-__init__.py
 cache.py
 log.py
 run.py
 ```
+
+You have split the code into 3 modules, but it is not worth it to use a more complex directory structure.
 
 run.py:
 ```python
@@ -63,16 +66,9 @@ import ultraimport
 # `__dir__` refers to the directory where run.py is in.
 ultraimport('__dir__/log.py', 'logger', globals=globals())
 
-# Lazy import the cache module. On the first access to any attribute of
-# cache, the real cache module will be loaded
-cache = ultraimport('__dir__/cache.py', lazy=True)
-
 def main():
     # do something
-
     logger('I did something')
-
-    cache.store('Something')
 
 if __name__ == '__main__':
     main()
