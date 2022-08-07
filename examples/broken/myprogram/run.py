@@ -4,7 +4,6 @@ from .log import logger
 
 def main():
     # do something
-
     logger('I did something')
 
 

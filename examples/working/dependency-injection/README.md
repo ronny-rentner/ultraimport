@@ -3,11 +3,11 @@
 ## How To Run?
 
 ```shell
- python ./run.py 
+ python ./run.py
 injected logger: worker.py is doing some work
 ```
 
-run.py (inject our own `log()` method as `logx()` into worker.py):
+In our run.py we import worker.py and while doing that inject our own `log()` method as `logx()` into worker.py:
 ```python
 import ultraimport
 

@@ -50,7 +50,7 @@ See [examples/working/debug-transform](/examples/working/debug-transform)
 
 ### 4. Dynamic Namespace
 
-When import Python code files from the filesystem, one issue is if they contain further relative imports. Those relative imports
+When importing Python code files from the filesystem, one issue is if they contain further relative imports. Those relative imports
 depend on a package or namespace package. Thus, ultraimport can dynamically put your module in a namespace so those subsequent relative imports continue to work.
 
 See [examples/working/dynamic-namespace](/examples/working/dynamic-namespace)
@@ -93,3 +93,9 @@ utils: <module 'working.dynamic-namespace.utils' from '/home/ronny/Projects/py/u
 <module 'working.dynamic-namespace.lib.lib' from '/home/ronny/Projects/py/ultraimport/examples/working/dynamic-namespace/lib/lib.py'>
 <module 'working.dynamic-namespace.lib' (namespace)>
 ```
+
+### 3. Dependency Injection
+
+See [examples/working/dependency-injection](/examples/working/dependency-injection)
+
+
