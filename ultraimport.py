@@ -574,13 +574,14 @@ def get_package_name(file_path, package):
         rest, dot, name = package.rpartition('.')
         parent_package = None
         if rest:
-            parent_package = get_package_name('', rest)
+            parent_package = get_package_name(os.path.dirname(file_path), rest)
         package_module = create_ns_package(package, path)
         if parent_package:
             package_module.__package__ = parent_package
         return package, path, package_module
     elif type(package) == int:
-        package = '.'.join(os.path.dirname(os.path.abspath(file_path)).split(os.sep)[-package:])
+        pathes = os.path.dirname(os.path.abspath(file_path)).split(os.sep)[-package:]
+        package = '.'.join(pathes)
         return get_package_name(path, package)
     return None, None, None
 

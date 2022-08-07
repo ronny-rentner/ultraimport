@@ -1,6 +1,6 @@
 import ultraimport
 
-lib = ultraimport('__dir__/lib/lib.py', package=3)
+lib = ultraimport('__dir__/lib/lib.py', package=2)
 
 print(lib)
 
