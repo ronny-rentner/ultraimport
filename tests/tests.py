@@ -77,6 +77,7 @@ class ultraimportTests(unittest.TestCase):
         file_path = "examples/working/mypackage/run.py"
         ret = self.exec(file_path)
         self.assertEqual(ret.returncode, 0, f'Running {file_path} did return with an error: {ret}')
+        print('STDOUT', ret.stdout)
         self.assertEqual(ret.stdout, b"submodule start  submodule\n"
             b"hello from xmodule.py\n"
             b"hello from siblingmodule.py\n"
