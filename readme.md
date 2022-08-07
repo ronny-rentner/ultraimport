@@ -13,6 +13,7 @@ Get control over your imports -- no matter how you run your code.
 - Import any file from the file system as Python code
 - Works independent of your `sys.path`, independent of your current working directory, and independent of your top-level package
 - Works no matter if you run your code as a module or as a script
+- Dynamically wrap your code in a virtual namespace package
 - Preprocess code for optimizations (see [example](/examples/working/debug-transform))
 - Recursively rewrite subsequent relative import statements (see [example](/examples/working/recurse))
 - Dependency injection (see [example](/examples/working/dependency-injection))
