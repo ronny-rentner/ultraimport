@@ -710,9 +710,7 @@ def ultraimport(file_path, objects_to_import=None, globals=None, preprocessor=No
             #print('__package__', package_name)
             #print('__path__', package_path)
             if package_name:
-                #package = create_ns_package(package_name, package_path)
                 module.__package__ = package_name
-                #setattr(package, name, module)
                 setattr(package_module, __name__, module)
 
             sys.modules[name] = module
@@ -722,6 +720,11 @@ def ultraimport(file_path, objects_to_import=None, globals=None, preprocessor=No
             try:
                 spec.loader.exec_module(module)
             except ImportError as e:
+                # If the import fails, we do not cache the module
+                if file_path in cache:
+                    del cache[file_path]
+                if name in sys.modules:
+                    del sys.modules[name]
 
                 #print(e.msg, e.name, e.path)
                 if (e.msg == 'attempted relative import with no known parent package' or
@@ -735,10 +738,6 @@ def ultraimport(file_path, objects_to_import=None, globals=None, preprocessor=No
                         raise ExecuteImportError('Unhandled, relative import statement found.', file_path=file_path_orig, file_path_resolved=file_path, from_exception=e).with_traceback(e.__traceback__) from None
                 else:
                     raise e
-            finally:
-                # If the import fails, we do not cache the module
-                if file_path in cache:
-                    del cache[file_path]
 
         if objects_to_import:
             return_single = False

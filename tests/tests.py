@@ -104,10 +104,10 @@ class ultraimportTests(unittest.TestCase):
         self.assertEqual(ret.stdout, b"Hello world\n")
 
     def test_example_dynamic_namespace(self):
-        file_path = "examples/working/dynamic_namespace/run.py"
+        file_path = "examples/working/dynamic-namespace/run.py"
         ret = self.exec(file_path)
         self.assertEqual(ret.returncode, 0, f'Running {file_path} did return with an error: {ret}')
-        self.assertIn("<module 'dynamic-namespace.lib' (namespace)>", ret.stdout)
+        self.assertIn(b"<module 'dynamic-namespace.lib' (namespace)>", ret.stdout)
 
 
 if __name__ == '__main__':
