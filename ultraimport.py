@@ -340,7 +340,7 @@ class SourceFileLoader(importlib.machinery.SourceFileLoader):
         # Write processed code back for caching
         with open(self.preprocess_file_path, 'wb') as f:
             f.write(f"# NOTE: This file was automatically generated from:\n# {file_path}\n# DO NOT CHANGE DIRECTLY! {time.time()}\n".encode())
-            f.write(self.code)
+            f.write(self.code.encode())
 
             #os.utime(self.preprocess_file_path, (original['mtime'], original['mtime']))
 
