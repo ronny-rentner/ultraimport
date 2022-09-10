@@ -38,7 +38,7 @@ try:
 except:
     pass
 
-reload_counter = { 0: 0 }
+reload_counter = 0
 cache = {}
 import_ongoing_stack = {}
 
@@ -813,23 +813,23 @@ def ultraimport(file_path, objects_to_import=None, globals=None, preprocessor=No
 
         return module
 
-def reload(globals=None):
+def reload(ns=None, add_to_ns=True):
     """ Reload ultraimport module """
     reloaded = ultraimport(__file__, use_cache=False)
-    reloaded.reload_counter[0] += 1
+    reloaded.reload_counter = reload_counter + 1
     CallableModule = reloaded.CallableModule
     cache = {}
 
-    # Inject into real globals
-    if globals and 'ultraimport' in globals:
-        globals['ultraimport'] = reloaded
-
-    if not globals:
+    if ns and add_to_ns:
+        ns['ultraimport'] = reloaded
+    elif not ns and add_to_ns:
         frame = inspect.currentframe()
         frame = frame.f_back
         while frame:
-            if hasattr(frame, 'ultraimport'):
-                setattr(frame, 'ultraimport', reloaded)
+            if 'ultraimport' in frame.f_locals:
+                frame.f_locals['ultraimport'] = reloaded
+            if 'ultraimport' in frame.f_globals:
+                frame.f_globals['ultraimport'] = reloaded
             frame = frame.f_back
     return reloaded
 
