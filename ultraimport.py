@@ -19,7 +19,7 @@
 #
 
 import importlib, importlib.machinery, importlib.util
-import ast, collections, os, sys, contextlib, types, traceback, time
+import ast, collections, inspect, os, sys, contextlib, types, traceback, time
 
 try:
     from rich.traceback import install
@@ -44,6 +44,9 @@ import_ongoing_stack = {}
 
 debug = False
 #debug = True
+
+#if not debug:
+#    _rich_traceback_omit = True
 
 ##################
 # ERROR HANDLING #
@@ -163,8 +166,8 @@ class CircularImportError(ImportError, ErrorRendererMixin):
         error_table = []
         suggestion = ''
 
-        import pprint
-        pprint.pprint(traceback.extract_stack())
+        #import pprint
+        #pprint.pprint(traceback.extract_stack())
 
         frame = self.find_frame(frames=traceback.extract_stack())
         error_table.extend([
@@ -279,6 +282,19 @@ class LazyModule(types.ModuleType):
             self._module = self._importer()
             return self._module
         return self._module.__getattribute__(key)
+
+class Loader:
+    def __new__(cls, name, file_path, *args, **kwargs):
+        """ Returns either SourceFileLoader or ExtensionFileLoader depending on file_path """
+        _, suffix = os.path.splitext(file_path)
+
+        if suffix in importlib.machinery.EXTENSION_SUFFIXES:
+            return ExtensionFileLoader(name, file_path)
+
+        return SourceFileLoader(name, file_path, *args, **kwargs)
+
+class ExtensionFileLoader(importlib.machinery.ExtensionFileLoader):
+    pass
 
 class SourceFileLoader(importlib.machinery.SourceFileLoader):
     """ Preprocessing Python source file loader """
@@ -564,8 +580,14 @@ class RewriteImport(ast.NodeTransformer):
 
 def get_module_name(file_path):
     """ Calculate Python compatible module name from file_path """
-    base_name = os.path.basename(file_path)
-    name, file_extension = os.path.splitext(base_name)
+
+    # Try Python internal approach first
+    name = inspect.getmodulename(file_path)
+
+    # If Python cannot determine a name, we will simply split off any file extensions
+    if not name:
+        name, suffix = os.path.splitext(os.path.basename(file_path))
+
     return name.replace('-', '_').replace('.', '_')
 
 def get_package_name(file_path, package):
@@ -616,16 +638,31 @@ def ultraimport(file_path, objects_to_import=None, globals=None, preprocessor=No
     if debug:
         print("ultraimport", file_path)
 
-    if objects_to_import == '*' and globals == None:
-        raise ValueError("Cannot import '*' without having globals set.")
-
     file_path_orig = file_path
+
+    # If we are in Cython compiled code, there are not frames for what happens inside ultraimport
+    if __file__.endswith('.so') or __file__.endswith('.pyx'):
+        caller_level = 0
+
+    frame = None
 
     # We are supposed to replace the string `__dir__` in file_path with the directory of the caller.
     # If the caller is not provided via parameter, we'll find it out ourselves.
     if not caller:
-        import inspect
-        caller = inspect.stack()[caller_level].filename
+        stack = inspect.stack()
+        if caller_level >= len(stack):
+            caller_level = len(stack) - 1
+        caller = stack[caller_level].filename
+        frame = inspect.currentframe()
+        for i in range(caller_level):
+            frame = frame.f_back
+
+    if objects_to_import == '*' and globals == None:
+        if frame:
+            globals = frame.f_locals
+        else:
+            raise ValueError("Cannot import '*' without having globals set.")
+
 
     if caller == '<stdin>':
         caller = f"{os.getcwd()}{os.sep}<stdin>"
@@ -694,7 +731,9 @@ def ultraimport(file_path, objects_to_import=None, globals=None, preprocessor=No
                     return RewriteImport.transform_imports(source, *args, **kwargs)
                 preprocessor_combined = _
 
-            loader = SourceFileLoader(name, file_path, preprocessor=preprocessor_combined, use_cache=use_preprocessor_cache, cache_path_prefix=cache_path_prefix)
+            #loader = None
+            #if is_compiled(file_path):
+            loader = Loader(name, file_path, preprocessor=preprocessor_combined, use_cache=use_preprocessor_cache, cache_path_prefix=cache_path_prefix)
             spec = importlib.util.spec_from_loader(name, loader)
             module = importlib.util.module_from_spec(spec)
 
@@ -776,17 +815,28 @@ def ultraimport(file_path, objects_to_import=None, globals=None, preprocessor=No
 
 def reload(globals=None):
     """ Reload ultraimport module """
-    reload_counter[0] += 1
     reloaded = ultraimport(__file__, use_cache=False)
+    reloaded.reload_counter[0] += 1
     CallableModule = reloaded.CallableModule
     cache = {}
+
+    # Inject into real globals
     if globals and 'ultraimport' in globals:
         globals['ultraimport'] = reloaded
+
+    if not globals:
+        frame = inspect.currentframe()
+        frame = frame.f_back
+        while frame:
+            if hasattr(frame, 'ultraimport'):
+                setattr(frame, 'ultraimport', reloaded)
+            frame = frame.f_back
     return reloaded
 
 # Make ultraimport() directly callable after doing `import ultraimport`
 class CallableModule(types.ModuleType):
     def __call__(self, *args, **kwargs):
-        return ultraimport(*args, caller_level=2, **kwargs)
+        kwargs['caller_level'] = 2
+        return ultraimport(*args, **kwargs)
 
 sys.modules[__name__].__class__ = CallableModule
