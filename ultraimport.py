@@ -19,7 +19,7 @@
 #
 
 import importlib, importlib.machinery, importlib.util
-import ast, collections, inspect, os, sys, contextlib, types, traceback, time
+import ast, collections, contextlib, inspect, os, pathlib, sys, types, traceback, time
 
 try:
     from rich.traceback import install
@@ -588,6 +588,7 @@ def get_module_name(file_path):
     if not name:
         name, suffix = os.path.splitext(os.path.basename(file_path))
 
+    # And replace all illegal characters
     return name.replace('-', '_').replace('.', '_')
 
 def get_package_name(file_path, package):
@@ -608,6 +609,7 @@ def get_package_name(file_path, package):
     return None, None, None
 
 def create_ns_package(package_name, package_path):
+    """ Create dynamic namespace package on the fly """
     loader = importlib._bootstrap_external._NamespaceLoader('loader', [package_path], None)
     spec = importlib.util.spec_from_loader(package_name, loader)
     package = importlib.util.module_from_spec(spec)
@@ -635,6 +637,8 @@ def check_file_is_importable(file_path, file_path_orig):
     return True
 
 def ultraimport(file_path, objects_to_import=None, globals=None, preprocessor=None, package=None, caller=None, caller_level=1, use_cache=True, lazy=False, recurse=False, inject=None, use_preprocessor_cache=True, cache_path_prefix=None):
+    """ Import file from file system. """
+
     if debug:
         print("ultraimport", file_path)
 
@@ -649,13 +653,28 @@ def ultraimport(file_path, objects_to_import=None, globals=None, preprocessor=No
     # We are supposed to replace the string `__dir__` in file_path with the directory of the caller.
     # If the caller is not provided via parameter, we'll find it out ourselves.
     if not caller:
-        stack = inspect.stack()
-        if caller_level >= len(stack):
-            caller_level = len(stack) - 1
-        caller = stack[caller_level].filename
+        #stack = inspect.stack()
+        #if caller_level >= len(stack):
+        #    caller_level = len(stack) - 1
+        #caller = stack[caller_level].filename
         frame = inspect.currentframe()
+
+        # Search for the right frame
         for i in range(caller_level):
-            frame = frame.f_back
+            if hasattr(frame, 'f_back') and frame.f_back:
+                frame = frame.f_back
+            else:
+                break
+
+        caller = frame.f_code.co_filename
+
+        # If we are being used from a compiled module, we need to do
+        # some more steps to extract the file name of the compiled module
+        if caller == '<frozen importlib._bootstrap>':
+            if 'args' in frame.f_locals and len(frame.f_locals['args']) > 0:
+                caller = frame.f_locals['args'][0].__file__
+            else:
+                raise Exception('Cannot extract file name from caller. Please report this issue. In the meantime, you can use  when using ultraimport(..., caller=__file__)')
 
     if objects_to_import == '*' and globals == None:
         if frame:
@@ -663,9 +682,10 @@ def ultraimport(file_path, objects_to_import=None, globals=None, preprocessor=No
         else:
             raise ValueError("Cannot import '*' without having globals set.")
 
-
     if caller == '<stdin>':
         caller = f"{os.getcwd()}{os.sep}<stdin>"
+
+    del frame
 
     if '__dir__' in file_path:
         file_path = file_path.replace('__dir__', os.path.dirname(caller))
@@ -831,6 +851,9 @@ def reload(ns=None, add_to_ns=True):
             if 'ultraimport' in frame.f_globals:
                 frame.f_globals['ultraimport'] = reloaded
             frame = frame.f_back
+
+        del frame
+
     return reloaded
 
 # Make ultraimport() directly callable after doing `import ultraimport`
