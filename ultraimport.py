@@ -75,7 +75,7 @@ class ErrorRendererMixin():
 
         table_lines = [ f" {k:>{column1_size}} │ {v}" for k, v in data ]
 
-        return '\n'.join(table_lines)
+        return '\n'.join(table_lines) + '\n'
 
     def render_header(self, headline, message):
         headline_border = '─' * len(headline)
@@ -202,11 +202,16 @@ class ExecuteImportError(ImportError, ErrorRendererMixin):
 
         if from_exception and from_exception.msg == 'attempted relative import with no known parent package':
             error_table.append(('Possible reason', 'A subsequent, relative import statement was found, but not handled.'))
-            error_table.append(('Original errror', f'"{from_exception.msg}"'))
 
             suggestion = self.render_suggestion('To handle the relative import from above, use the ultraimport() parameter `recurse=True`.',
-                'This will activate automatic rewriting of subsequent, relative imports.')
+                'This will activate automatic rewriting of subsequent, relative imports. Alternatively set `package=<int>` to create a virtual package.')
+        if from_exception and from_exception.msg == 'attempted relative import beyond top-level package':
+            error_table.append(('Possible reason', 'A subsequent, relative import statement was found, but not handled correctly.'))
 
+            suggestion = self.render_suggestion('To handle the relative import from above, use the ultraimport() parameter `recurse=True`.',
+                'This will activate automatic rewriting of subsequent, relative imports. Alternatively set `package=<int>` to create a virtual package.')
+
+        error_table.append(('Original error', f'"{from_exception.msg}"'))
         body = self.render_table(error_table)
 
         self.msg = f"{header}\n{body}{suggestion}"
@@ -284,8 +289,8 @@ class LazyModule(types.ModuleType):
         return self._module.__getattribute__(key)
 
 class Loader:
+    """ Loader factory that returns either SourceFileLoader or ExtensionFileLoader depending on file_path """
     def __new__(cls, name, file_path, *args, **kwargs):
-        """ Returns either SourceFileLoader or ExtensionFileLoader depending on file_path """
         _, suffix = os.path.splitext(file_path)
 
         if suffix in importlib.machinery.EXTENSION_SUFFIXES:
@@ -300,6 +305,7 @@ class SourceFileLoader(importlib.machinery.SourceFileLoader):
     """ Preprocessing Python source file loader """
 
     def __init__(self, name, file_path, preprocessor=None, use_cache=True, cache_path_prefix=None):
+        # Note: It seems the module name here is not really used in Python internally
         super().__init__(name, file_path)
         self.preprocessor = preprocessor
         self.use_cache = use_cache
@@ -598,7 +604,7 @@ def get_package_name(file_path, package):
         parent_package = None
         if rest:
             parent_package = get_package_name(os.path.dirname(file_path), rest)
-        package_module = create_ns_package(package, path)
+        package_module = create_ns_package_full(package, path)
         if parent_package:
             package_module.__package__ = parent_package
         return package, path, package_module
@@ -608,8 +614,17 @@ def get_package_name(file_path, package):
         return get_package_name(path, package)
     return None, None, None
 
-def create_ns_package(package_name, package_path):
+def create_ns_package(package_name, package_path, caller=None, caller_level=1):
     """ Create dynamic namespace package on the fly """
+    if '__dir__' in package_path:
+        if not caller:
+            import inspect
+            caller = inspect.stack()[caller_level].filename
+        package_path = os.path.abspath(package_path.replace('__dir__', os.path.dirname(caller)))
+
+    return create_ns_package_full(package_name, package_path)
+
+def create_ns_package_full(package_name, package_path):
     loader = importlib._bootstrap_external._NamespaceLoader('loader', [package_path], None)
     spec = importlib.util.spec_from_loader(package_name, loader)
     package = importlib.util.module_from_spec(spec)
@@ -636,7 +651,7 @@ def check_file_is_importable(file_path, file_path_orig):
 
     return True
 
-def ultraimport(file_path, objects_to_import=None, globals=None, preprocessor=None, package=None, caller=None, caller_level=1, use_cache=True, lazy=False, recurse=False, inject=None, use_preprocessor_cache=True, cache_path_prefix=None):
+def ultraimport(file_path, objects_to_import=None, globals=None, preprocessor=None, package=None, caller=None, caller_level=1, use_cache=True, lazy=False, recurse=False, inject=None, upject=False, use_preprocessor_cache=True, cache_path_prefix=None):
     """ Import file from file system. """
 
     if debug:
@@ -653,10 +668,6 @@ def ultraimport(file_path, objects_to_import=None, globals=None, preprocessor=No
     # We are supposed to replace the string `__dir__` in file_path with the directory of the caller.
     # If the caller is not provided via parameter, we'll find it out ourselves.
     if not caller:
-        #stack = inspect.stack()
-        #if caller_level >= len(stack):
-        #    caller_level = len(stack) - 1
-        #caller = stack[caller_level].filename
         frame = inspect.currentframe()
 
         # Search for the right frame
@@ -676,7 +687,7 @@ def ultraimport(file_path, objects_to_import=None, globals=None, preprocessor=No
             else:
                 raise Exception('Cannot extract file name from caller. Please report this issue. In the meantime, you can use  when using ultraimport(..., caller=__file__)')
 
-    if objects_to_import == '*' and globals == None:
+    if (objects_to_import == '*' and globals == None) or upject:
         if frame:
             globals = frame.f_locals
         else:
@@ -730,12 +741,15 @@ def ultraimport(file_path, objects_to_import=None, globals=None, preprocessor=No
 
         import_ongoing_stack[file_path] = True
 
+
         #print('CACHE CHECK', use_cache, file_path, file_path in cache)
         #print('CACHE', cache)
 
+        cache_key = (file_path, package)
+
         # TODO: Should we use resolved file_path for the cache?
-        if use_cache and file_path in cache:
-            module = cache[file_path]
+        if use_cache and cache_key in cache:
+            module = cache[cache_key]
         else:
 
             check_file_is_importable(file_path, file_path_orig)
@@ -751,10 +765,14 @@ def ultraimport(file_path, objects_to_import=None, globals=None, preprocessor=No
                     return RewriteImport.transform_imports(source, *args, **kwargs)
                 preprocessor_combined = _
 
-            #loader = None
-            #if is_compiled(file_path):
-            loader = Loader(name, file_path, preprocessor=preprocessor_combined, use_cache=use_preprocessor_cache, cache_path_prefix=cache_path_prefix)
-            spec = importlib.util.spec_from_loader(name, loader)
+            package_name, package_path, package_module = get_package_name(file_path, package)
+
+            # Long name of the module including parent package if available
+            full_name = f'{package_name}.{name}' if package_name else name
+
+            loader = Loader(full_name, file_path, preprocessor=preprocessor_combined, use_cache=use_preprocessor_cache, cache_path_prefix=cache_path_prefix)
+            spec = importlib.util.spec_from_loader(full_name, loader)
+
             module = importlib.util.module_from_spec(spec)
 
             # Inject ultraimport module
@@ -765,43 +783,48 @@ def ultraimport(file_path, objects_to_import=None, globals=None, preprocessor=No
                 for k, v in inject.items():
                     setattr(module, k, v)
 
-            package_name, package_path, package_module = get_package_name(file_path, package)
             #print('__package__', package_name)
             #print('__path__', package_path)
+            #print('module', module)
             if package_name:
                 module.__package__ = package_name
-                setattr(package_module, __name__, module)
+                # Inject module into the package
+                setattr(package_module, name, module)
 
             sys.modules[name] = module
             if use_cache:
-                cache[file_path] = module
+                cache[cache_key] = module
 
             try:
                 spec.loader.exec_module(module)
             except ImportError as e:
                 # If the import fails, we do not cache the module
-                if file_path in cache:
-                    del cache[file_path]
+                if cache_key in cache:
+                    del cache[cache_key]
                 if name in sys.modules:
                     del sys.modules[name]
 
+                # TODO: Move all the error case handling to the exception classes directly
                 #print(e.msg, e.name, e.path)
                 if (e.msg == 'attempted relative import with no known parent package' or
                     e.msg == 'attempted relative import beyond top-level package'):
                     if recurse:
                         raise ImportError('This is an internal ultraimport error. Please report this bug and the circumstances!')
                     if package:
-                        raise ImportError(f'ultraimport found an import ambiguity when importing {file_path}.\nYou need to either increase the level of package=int or, if that does not help, set recurse=True.')
+                        raise ExecuteImportError('Wrongly handled, relative import statement found.', file_path=file_path_orig, file_path_resolved=file_path, from_exception=e).with_traceback(e.__traceback__) from None
                     else:
-                        #e.msg = f'ultraimport found an import ambiguity when importing {file_path}.\nYou need to either set the level of package=int or, if that does not help, set recurse=True.'
                         raise ExecuteImportError('Unhandled, relative import statement found.', file_path=file_path_orig, file_path_resolved=file_path, from_exception=e).with_traceback(e.__traceback__) from None
+                if (e.msg.startswith('cannot import name') and e.msg.endswith('(unknown location)')):
+                        raise ExecuteImportError(str(e), file_path=file_path_orig, file_path_resolved=file_path, from_exception=e).with_traceback(e.__traceback__) from None
                 else:
                     raise e
 
         if objects_to_import:
             return_single = False
+            return_zipped = False
             if objects_to_import == '*':
                 objects_to_import = [ item for item in dir(module) if not item.startswith('__') ]
+                return_zipped = True
             elif type(objects_to_import) == str:
                 objects_to_import = [ objects_to_import ]
                 return_single = True
@@ -818,13 +841,20 @@ def ultraimport(file_path, objects_to_import=None, globals=None, preprocessor=No
                 except AttributeError as e:
                     raise ResolveImportError(str(e), file_path=file_path_orig, file_path_resolved=file_path) from None
 
+            if globals or return_zipped:
+                zipped = dict(zip(objects_to_import, values))
+
             if globals:
-                globals.update(zip(objects_to_import, values))
+                globals.update(zipped)
 
             if return_single:
                 return values[0]
 
+            if return_zipped:
+                return zipped
+
             return values
+
         elif globals:
             globals[module.__name__] = module
 

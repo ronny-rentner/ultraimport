@@ -1,0 +1,2 @@
+class Cherry:
+    pass

@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 import ultraimport
 
 lib = ultraimport('__dir__/lib/lib.py', package=2)

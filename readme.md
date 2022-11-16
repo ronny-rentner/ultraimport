@@ -11,7 +11,9 @@ Get control over your imports -- no matter how you run your code.
 
 **Features**:
 - Import any file from the file system as Python code
-- Works independent of your `sys.path`, independent of your current working directory, and independent of your top-level package
+- Works independent of your `sys.path`
+- Works independent of your current working directory
+- Works independent of your top-level package
 - Works no matter if you run your code as a module or as a script
 - Dynamically wrap your code in a virtual namespace package
 - Preprocess code for optimizations (see [example](/examples/working/debug-transform))
@@ -27,8 +29,6 @@ Get control over your imports -- no matter how you run your code.
 
 No! You will continue to use the builtin import statements to import 3rd party libraries which have been installed system wide. `ultraimport` is meant to import local files whose locations you control because they are located relatively to some other files.
 
-**How does it work?**
-
 ## Installation
 
 Install system wide:
@@ -42,43 +42,53 @@ git clone https://github.com/ronny-rentner/ultraimport.git
 pip install -e ./ultraimport
 ```
 
-## How To Use?
+## Quickstart
 
-*Note: You can find [this](/examples/working/myprogram) and other examples in the [examples/working/](/examples/working) folder.*
+*Note: You can find [this](/examples/working/quickstart) and other examples in the [examples/working/](/examples/working) folder.*
 
-Let's assume your new program in the folder `~/myprogram` looks like this:
-```shell
-cache.py
-log.py
-run.py
+<details><summary>The [quickstart](/examples/working/quickstart/) example folder looks like this: </summary>
 ```
+cd ultraimport/examples/working/
+tree quickstart -I __pycache__
 
-You have split the code into 3 modules, but it is not worth it to use a more complex directory structure.
+quickstart
+├── cherry.py
+├── readme.md
+├── red
+│   ├── cherry.py
+│   └── strawberry.py
+├── run
+│   └── run.py
+└── yellow
+    ├── banana.py
+    └── lemon.py
 
-run.py:
+3 directories, 7 files
+```
+</details>
+
+The entry point is the script [run.py](/examples/working/quickstart/run/run.py) located in the [quickstart/run](/examples/working/quickstart/run/) folder.
+
 ```python
-#!/usr/bin/env python3
-
-# ultraimport needs to be installed and imported in the classical way.
 import ultraimport
+# Import Python module 'cherry.py' from parent folder
+cherry = ultraimport('__dir__/../cherry.py')
 
-# Import the 'logger' object from 'log.py' that is located in the same
-# directory as this file and add 'logger' to the global namespace.
-# `__dir__` refers to the directory where run.py is in.
-ultraimport('__dir__/log.py', 'logger', globals=globals())
+# Import another Python module 'cherry.py' from a sibling folder
+cherry = ultraimport('__dir__/../red/cherry.py')
 
-def main():
-    # do something
-    logger('I did something')
+# Import MyClass object from cherry.py and alias it to the name `my_class`
+my_class = ultraimport('__dir__/../cherry.py', 'MyClass')
 
-if __name__ == '__main__':
-    main()
-else:
-    logger('I was imported')
+# You can make sure my_class is actually the type we expect, a class,
+# and my_string is a string, otherwise a TypeError is thrown.
+my_class, my_string = ultraimport('__dir__/../cherry.py', { 'MyClass': type, 'some_string': str })
+
+# Or import all objects
+objs = ultraimport('__dir__/../cherry.py', '*')
+# print(objs['MyClass']) => <class 'cherry.MyClass'>
+
 ```
-
-With `ultraimport`, no matter how you call run.py, it will always find log.py.
-
 
 ## The Issue: Relative Import in Python
 
