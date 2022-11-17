@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 import unittest, subprocess, sys, os, tempfile, pathlib
 
 # So we can find ultraimport without installing it
