@@ -7,8 +7,8 @@ cherry = ultraimport('__dir__/../cherry.py')
 print(cherry, '\n', dir(cherry), '\n')
 
 # Import another Python module 'cherry.py' from a sibling folder
-cherry = ultraimport('__dir__/../red/cherry.py')
-print(cherry, '\n', dir(cherry), '\n')
+other_cherry = ultraimport('__dir__/../red/cherry.py')
+print(other_cherry, '\n', dir(other_cherry), '\n')
 
 # Import MyClass object from cherry.py and alias it to the name `my_class`
 my_class = ultraimport('__dir__/../cherry.py', 'MyClass')
