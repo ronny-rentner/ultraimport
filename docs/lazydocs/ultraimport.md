@@ -172,7 +172,8 @@ ultraimport(
 )
 ```
 
-Import Python code files from the file system. 
+Import Python code files from the file system. This function is the central entry point to run ultraimport. Most of the time,
+you will only need to call this function.
 
 
 
