@@ -744,7 +744,7 @@ def check_file_is_importable(file_path, file_path_orig):
 
     return True
 
-def ultraimport(file_path, objects_to_import=None, add_to_ns=None, preprocessor=None, package=None, caller=None, caller_level=1, use_cache=True, lazy=False, recurse=False, inject=None, use_preprocessor_cache=True, cache_path_prefix=None):
+def ultraimport(file_path, objects_to_import=None, add_to_ns=None, preprocessor=None, package=None, caller=None, use_cache=True, lazy=False, recurse=False, inject=None, use_preprocessor_cache=True, cache_path_prefix=None):
     """
     Import Python code files from the file system.
 
@@ -755,14 +755,14 @@ def ultraimport(file_path, objects_to_import=None, add_to_ns=None, preprocessor=
             working directory will be used for `__dir__`. If you use advanced debugging tools (or want to save some
             CPU cycles) you might want to set `caller=__file__`.
 
-        objects_to_import (str): Provide name of single object to import from file or the value `'*'` to import all
-            objects.
-
-        objects_to_import (Iterable[str]): Names of objects to import.
-
-        objects_to_import (Dict[str, object]): The keys represent the names of the objects to import. The value define
-            the expected types of the objects to import. A TypeError is thrown if the types don't match the expectation.
-            If you set `lazy=True`, you must use a dict for `objects_to_import` and define the types.
+        objects_to_import (str | Iterable[str] | Dict[str, object]): Can have several modes depending on the type of
+            the parameter.
+            - `str`: Provide the name of a single object to import from the module in `file_path` or use the value `'*'`
+                to import all objects from that module.
+            - `Iterable[str]: Provide names of objects to import.
+            - `Dict[str, object]`: The keys represent the names of the objects to import. The values define
+                the expected types of the objects to import. A `TypeError` is thrown if the types don't match the
+                expectation.  If you set `lazy=True`, you must use a dict for `objects_to_import` and define the types.
 
         add_to_ns (Dict[str, object]): add the `objects_to_import` to the dict provided. Usually called with
             `add_to_ns=locals()` if you want the imported module to be added to the global namespace of the caller.
@@ -797,7 +797,7 @@ def ultraimport(file_path, objects_to_import=None, add_to_ns=None, preprocessor=
             even if they are not.
 
     Returns:
-        Depending on the parameters returns *one* of the following:
+        Depending on the parameters *returns one of the following*:
 
         object: If `objects_to_import` is `None`, returns a single module object.
 
@@ -1010,7 +1010,6 @@ def reload(ns=None, add_to_ns=True):
 class CallableModule(types.ModuleType):
     """ Makes ultraimport directly callable after doing `import ultraimport` """
     def __call__(self, *args, **kwargs):
-        kwargs['caller_level'] = 2
         return ultraimport(*args, **kwargs)
 
 sys.modules[__name__].__class__ = CallableModule

@@ -4,7 +4,7 @@ Get control over your imports -- no matter how you run your code.
 
 **Warning: This is an early hack. There are only few unit tests, yet. Maybe not stable!**
 
-[Installation](#installation) | [Quickstart](#quickstart) | [Parameters](#parameters)
+[Features](#features) | [Installation](#installation) | [Quickstart](#quickstart) | [Documentation](#documentation)
 
 [![PyPI Package](https://img.shields.io/pypi/v/ultradict.svg)](https://pypi.org/project/ultraimport)
 [![Run Tests](https://github.com/ronny-rentner/ultraimport/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/ronny-rentner/ultraimport/actions/workflows/ci.yml)
@@ -194,9 +194,9 @@ from yellow.cherry import Cherry
 
 ## Documentation
 
-<a href="https://github.com/ronny-rentner/ultraimport/blob/main/ultraimport.py#L747"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+The full documentation can be find in the [docs/](docs/) folder.
 
-## <kbd>function</kbd> `ultraimport`
+### <kbd>function</kbd> `ultraimport`
 
 ```python
 ultraimport(
