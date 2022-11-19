@@ -172,8 +172,7 @@ ultraimport(
 )
 ```
 
-Import Python code files from the file system. This function is the central entry point to run ultraimport. Most of the time,
-you will only need to call this function.
+Import Python code files from the file system. 
 
 
 
@@ -182,10 +181,10 @@ you will only need to call this function.
  - <b>`file_path`</b> (str):  Path to the module file that should be imported. It can have any file extension. Please be  aware that you must provide the file extension. The path can be relative or absolute. You can use the  special string `__dir__` to refer to the directory of the caller. If run from a Python REPL, the current  working directory will be used for `__dir__`. If you use advanced debugging tools (or want to save some  CPU cycles) you might want to set `caller=__file__`. 
 
 
- - <b>`objects_to_import`</b>:  Can have several modes depending on the type of  the parameter. 
+ - <b>`objects_to_import`</b>:  Can have several modes depending on the type of the parameter. 
     - (str): Provide the name of a single object to import from the module in `file_path` or use the value `'*'`  to import all objects from that module. 
-    - `Iterable[str]: Provide names of objects to import. 
-    - `Dict[str, object]`: The keys represent the names of the objects to import. The values define  the expected types of the objects to import. A `TypeError` is thrown if the types don't match the  expectation.  If you set `lazy=True`, you must use a dict for `objects_to_import` and define the types. 
+    - (Iterable[str]): Provide names of objects to import. 
+    - (Dict[str, object]): The keys represent the names of the objects to import. The values define  the expected types of the objects to import. A `TypeError` is thrown if the types don't match the  expectation.  If you set `lazy=True`, you must use a dict for `objects_to_import` and define the types. 
 
 
  - <b>`add_to_ns`</b> (Dict[str, object]):  add the `objects_to_import` to the dict provided. Usually called with  `add_to_ns=locals()` if you want the imported module to be added to the global namespace of the caller. 
@@ -229,7 +228,7 @@ you will only need to call this function.
 
 ---
 
-<a href="https://github.com/ronny-rentner/ultraimport/blob/main/ultraimport.py#L1001"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/ronny-rentner/ultraimport/blob/main/ultraimport.py#L1000"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `reload`
 
@@ -1036,7 +1035,7 @@ gen_raise(alias, code_info, combine, object_to_import)
 ```python
 gen_try(
     try_body,
-    except_body=<ast.Pass object at 0x7ff793454820>,
+    except_body=<ast.Pass object at 0x7f1073178820>,
     except_alias='e',
     except_error='ultraimport.ResolveImportError'
 )
@@ -1075,7 +1074,7 @@ Rewrite all `import .. from` statements
 
 ---
 
-<a href="https://github.com/ronny-rentner/ultraimport/blob/main/ultraimport.py#L1010"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/ronny-rentner/ultraimport/blob/main/ultraimport.py#L1009"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `CallableModule`
 Makes ultraimport directly callable after doing `import ultraimport`  
