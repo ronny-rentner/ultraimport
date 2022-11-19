@@ -4,9 +4,9 @@
 import ultraimport
 
 # Import the 'logger' object from 'log.py' that is located in the same
-# directory as this file and add 'logger' to the global namespace.
+# directory as this file.
 # `__dir__` refers to the directory where this file is in.
-ultraimport('__dir__/log.py', 'logger', globals=globals())
+logger = ultraimport('__dir__/log.py', 'logger')
 
 def main():
     # do something

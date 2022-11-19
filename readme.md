@@ -80,36 +80,111 @@ The entry point is the script [run.py](/examples/working/quickstart/run/run.py) 
 ```python
 import ultraimport
 
+# Example 1:
 # Import Python module 'cherry.py' from parent folder
 cherry = ultraimport('__dir__/../cherry.py')
+# <module 'cherry' from '/home/ronny/Projects/py/ultraimport/examples/working/quickstart/cherry.py'>
 
+
+# Example 2:
 # Import another Python module 'cherry.py' from a sibling folder
-cherry = ultraimport('__dir__/../red/cherry.py')
+other_cherry = ultraimport('__dir__/../red/cherry.py')
+# <module 'cherry' from '/home/ronny/Projects/py/ultraimport/examples/working/quickstart/red/cherry.py'>
 
-# Import MyClass object from cherry.py and alias it to the name `my_class`
-my_class = ultraimport('__dir__/../cherry.py', 'MyClass')
 
-# You can make sure my_class is actually the type we expect, a class,
+# Example 3:
+# Import the `Cherry` object from cherry.py and alias it to the name `my_class`
+my_class = ultraimport('__dir__/../red/cherry.py', 'Cherry')
+# <class 'cherry.Cherry'>
+
+
+# Example 4:
+# We can make sure my_class is actually the type we expect, a class,
 # and my_string is a string, otherwise a TypeError is thrown.
 my_class, my_string = ultraimport('__dir__/../cherry.py', { 'MyClass': type, 'some_string': str })
+# <class 'cherry.MyClass'>, "I am a string"
 
+
+# Example 5:
 # Or import all objects
 objs = ultraimport('__dir__/../cherry.py', '*')
-# print(objs['MyClass']) => <class 'cherry.MyClass'>
+# <class 'cherry.MyClass'>
 
+
+# Example 6:
+# Or them to our local scope
+ultraimport('__dir__/../cherry.py', '*', add_to_ns=locals())
+# <class 'cherry.MyClass'>
+
+
+
+# Example 7:
+# The next import would fail because the imported banana.py contains a
+# relative import in line 1: `from .. import cherry as relatively_imported_cherry`.
+try:
+    banana = ultraimport('__dir__/../yellow/banana.py')
+except Exception as e:
+    pass
+    # <class 'ultraimport.ultraimport.ExecuteImportError'>
+
+
+# Example 8:
+# You have two options:
+# Put banana.py it in a virtual namespace package using the last 2 folder parts,
+# in this case `quickstart.yellow` to make it work.
+banana = ultraimport('__dir__/../yellow/banana.py', package=2)
+# <module 'quickstart.yellow.banana' from '/home/ronny/Projects/py/ultraimport/examples/working/quickstart/yellow/banana.py'>
+
+# By the way, the other option is more advanced by using recurse=True:
+# This will rewrite any relative imports in your code dynamically to use ultraimport().
+
+
+# Example 9:
+# Import cherry.py and put it in a virtual namespace package called `fruit`
+# The fruit package is created automatically if it does not exist and the __path__
+# is set to the parent folder, in this case `red`.
+cherry = ultraimport('__dir__/../red/cherry.py', package='some.fruit')
+# <module 'some.fruit.cherry' from '/home/ronny/Projects/py/ultraimport/examples/working/quickstart/red/cherry.py'>
+
+
+# Example 10:
+# After creating the `fruit` namespace package as a side effect of the import,
+# we can use it to do classical imports; remember the __path__ of `fruit` points to `red`,
+# the parent directory of the cherry.py module we have imported.
+from some.fruit.strawberry import Strawberry
+# <class 'some.fruit.strawberry.Strawberry'>
+
+
+# Example 11:
+# You could also explicitly create a virtual namespace pointing to the directory 'yellow'
+yellow_ns = ultraimport.create_ns_package('yellow', '__dir__/../yellow')
+# <module 'yellow' (<_frozen_importlib_external._NamespaceLoader object at 0x7fba8de36920>)>
+
+
+# Example 12:
+# For further imports, you must use the package_name `yellow` as provided as the first argument.
+from yellow import lemon
+# <module 'yellow.lemon' from '/home/ronny/Projects/py/ultraimport/examples/working/quickstart/yellow/lemon.py'>
+
+
+# Example 13:
+# Let's add some other module from a different directory to our virtual package
+ultraimport('__dir__/../red/cherry.py', package='yellow')
+from yellow.cherry import Cherry
+# <class 'yellow.cherry.Cherry'>
 ```
 
 
 ## Parameters
 
-`ultraimport(file_path, objects_to_import=None, globals=None, preprocessor=None, package=None, caller=None, use_cache=True, lazy=False, recurse=False, inject=None, use_preprocessor_cache=True, cache_path_prefix=None)`
+`ultraimport(file_path, objects_to_import=None, add_to_ns=None, preprocessor=None, package=None, caller=None, use_cache=True, lazy=False, recurse=False, inject=None, use_preprocessor_cache=True, cache_path_prefix=None)`
 
 `file_path`: path to a file to import, ie. *'my_lib.py'*. It can have any file extension. Please be aware that you must provide the file extension. The path can be relative or absolute. You can use the special string `__dir__` to refer to the directory of the caller. If run from a Python REPL, the current working directory will be used for `__dir__`. If you use advanced debugging tools (or want to save some CPU cycles) you might want to set `caller=__file__`.
 
 `objects_to_import`: provide name of single object or the value `'*'` or an iterable of object names to import from `file_path`. If `lazy=True`, this should be a dict where the values declare the types of the imported objects.
 
-`globals`: add the `objects_to_import` to the dict provided. Usually called with `globals=locals()` if you want the imported module
-to be added to the global namespace of the caller.
+`add_to_ns`: add the `objects_to_import` to the provided namespace. Usually called with `add_to_ns=locals()` if you want the imported module
+to be added to the local scope of the caller.
 
 `preprocessor`: callable that takes the source code as an argument and that can return a modified version of the source code. Check out the [debug-transform example](/examples/working/debug-transform) on how to use the preprocessor.
 

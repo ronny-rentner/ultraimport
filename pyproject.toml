@@ -6,12 +6,14 @@ build-backend = 'setuptools.build_meta'
 
 [project]
 name = "ultraimport"
+description='Get control over your imports -- no matter how you run your code.'
 readme = "readme.md"
 license = { file = "license.txt" }
-version = "0.0.6"
+version = "0.0.7"
 dependencies= [
     'astor; python_version < "3.9"'
 ]
+requires-python = '>=3.5'
 
 [[authors]]
 name = "Ronny Rentner"

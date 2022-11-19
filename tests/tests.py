@@ -76,16 +76,16 @@ class ultraimportTests(unittest.TestCase):
     #    pass
 
     def test_reload(self):
-        # This will not increment the reload_counter from `ultraimport` but only from `reloaded`
-        reloaded = ultraimport.reload(add_to_ns = False)
-        self.assertNotEqual(ultraimport.reload_counter, reloaded.reload_counter)
-        self.assertEqual(ultraimport.reload_counter + 1, reloaded.reload_counter)
-
         # This will increment the reload_counter from both `ultraimport` and `reloaded`
         # Before this reload() call, the `ultraimport.reload_coutner` is still 0
         reloaded = ultraimport.reload()
         self.assertEqual(ultraimport.reload_counter, reloaded.reload_counter)
         self.assertEqual(ultraimport.reload_counter, 1)
+
+    # TODO: Add more thorough test case using  a compiled Cython module
+    def test_find_caller(self):
+        caller = ultraimport.find_caller()
+        self.assertEqual(caller, __file__)
 
     @unittest.skipUnless(sys.version_info >= (3, 9), "requires Python >= 3.9")
     def test_example_mypackage(self):
@@ -126,7 +126,6 @@ class ultraimportTests(unittest.TestCase):
         self.assertEqual(ret.returncode, 0, f'Running {file_path} did return with an error: {ret}')
         self.assertIn(b"<module 'dynamic-namespace.utils'", ret.stdout)
         self.assertIn(b"<module 'dynamic-namespace.lib'", ret.stdout)
-
 
 if __name__ == '__main__':
     unittest.main()

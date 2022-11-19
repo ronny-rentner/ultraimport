@@ -1,2 +1,6 @@
 class Cherry:
-    pass
+
+    ripe = False
+
+    def pick():
+        pass
