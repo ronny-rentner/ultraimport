@@ -764,9 +764,37 @@ def ultraimport(file_path, objects_to_import=None, add_to_ns=None, preprocessor=
             the expected types of the objects to import. A TypeError is thrown if the types don't match the expectation.
             If you set `lazy=True`, you must use a dict for `objects_to_import` and define the types.
 
-        `add_to_ns`: add the `objects_to_import` to the dict provided. Usually called with `add_to_ns=locals()` if you want the imported module
-            to be added to the global namespace of the caller.
+        add_to_ns (Dict[str, object]): add the `objects_to_import` to the dict provided. Usually called with
+            `add_to_ns=locals()` if you want the imported module to be added to the global namespace of the caller.
 
+        preprocessor (callable): Takes the source code as an argument and can return a modified version of the source code. Check out the [debug-transform example](/examples/working/debug-transform) on how to use the preprocessor.
+
+        package (str | int): Can have several modes depending on if you provide a string or an integer. If you provide
+            a string, ultraimport will generate one or more namespace packages and use it as parent package of your
+            imported module. If you set an integer, it means the number of path parts (directories) to extract from the
+            `file_path` to calculate the namespace package. This can help with subsequent relative imports in your
+            imported files. If `package` is set to the default `None`, the module will be imported without setting it
+            parent `__package__`.
+
+        use_cache (bool): If set to `False`, allows re-importing of the same source file even if it was imported before.
+            Otherwise a cached version of the imported module is returned.
+
+        lazy (bool): *Experimental* *wip* If set to `True` and if `objects_to_import` is set to `None`, it will lazy
+            import the module. If set to True and `objects_to_import` is a dict, the values of the dict must be the
+            type of the object to lazy import from the module. Currently only the type `callable` is supported.
+
+        recurse (bool): If set to `True`, a built-in preprocessor is activated to transparently rewrite all relative
+            import statements (those with a dot like `from . import something`) to ultraimport() calls. Use this mode
+            if you have no control over the source code of the impored modules.
+
+        cache_path_prefix (str): Directory for storing preprocessed files. If you use the preprocessor feature or if
+            you use the option `recurse=True` (which in turn uses the preprocessor feature) you will have the option to
+            store the resulting code after preprocessing. By default, they are stored in parallel to the original
+            source code files, but this option allows to override to location. One common setting is
+            `cache_path_prefix='__pycache__'` to store the processed files along with the bytecode files.
+            _Note_: Even when you change this directory, this will be hidden from Python. Towards Python, the
+            preprocessed files will always look like they are in the same directory as the original source code files,
+            even if they are not.
 
     Returns:
         Depending on the parameters returns *one* of the following:
