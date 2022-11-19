@@ -631,10 +631,10 @@ def get_package_name(file_path, package):
                        of parent directories.
 
     Returns:
-        A tuple containing:
+        A tuple containing
         package_name (str): Name of the package
         package_path (str): Path to the package
-        package_module (module): Package module object
+        package_module (types.ModuleType): Package module object
     """
     path = os.path.abspath(file_path if os.path.isdir(file_path) else os.path.dirname(file_path))
     if type(package) == str:
@@ -746,7 +746,7 @@ def check_file_is_importable(file_path, file_path_orig):
 
 def ultraimport(file_path, objects_to_import=None, add_to_ns=None, preprocessor=None, package=None, caller=None, use_cache=True, lazy=False, recurse=False, inject=None, use_preprocessor_cache=True, cache_path_prefix=None):
     """
-    Import Python code files from the file system.
+    Import Python code files from the file system. This is the central main function of ultraimport.
 
     Parameters:
         file_path (str): Path to the module file that should be imported. It can have any file extension. Please be
@@ -755,13 +755,13 @@ def ultraimport(file_path, objects_to_import=None, add_to_ns=None, preprocessor=
             working directory will be used for `__dir__`. If you use advanced debugging tools (or want to save some
             CPU cycles) you might want to set `caller=__file__`.
 
-        objects_to_import: Can have several modes depending on the type of the parameter.
-        - (str): Provide the name of a single object to import from the module in `file_path` or use the value `'*'`
-            to import all objects from that module.
-        - (Iterable[str]): Provide names of objects to import.
+        objects_to_import (str | (Iterable[str] | Dict[str, object]): Can have several modes depending on the type of the parameter.
+        - (str): Name of a single object to import from the module in `file_path`. The special value `'*'`
+            selects all objects from that module.
+        - (Iterable[str]): A list of names of objects to import.
         - (Dict[str, object]): The keys represent the names of the objects to import. The values define
-            the expected types of the objects to import. A `TypeError` is thrown if the types don't match the
-            expectation.  If you set `lazy=True`, you must use a dict for `objects_to_import` and define the types.
+            the expected types of those objects. A `TypeError` is thrown if the types don't match the
+            expectation. If you set `lazy=True`, you must use a dict for `objects_to_import` and define the types.
 
         add_to_ns (Dict[str, object]): add the `objects_to_import` to the dict provided. Usually called with
             `add_to_ns=locals()` if you want the imported module to be added to the global namespace of the caller.

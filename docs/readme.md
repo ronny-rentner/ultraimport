@@ -32,4 +32,4 @@
 - [`ultraimport.get_module_name`](./ultraimport.md#function-get_module_name): Return Python compatible module name from file_path. Replace dash and dot characters with underscore characters.
 - [`ultraimport.get_package_name`](./ultraimport.md#function-get_package_name): Generate necessary package hierarchy according to the `package` parameter and
 - [`ultraimport.reload`](./ultraimport.md#function-reload): Reload ultraimport module 
-- [`ultraimport.ultraimport`](./ultraimport.md#function-ultraimport): Import Python code files from the file system.
+- [`ultraimport.ultraimport`](./ultraimport.md#function-ultraimport): Import Python code files from the file system. This is the central main function of ultraimport.
