@@ -40,7 +40,9 @@ try: import astprettier
 except: pass
 
 # Keep track of reload count
+""" Keep track """
 reload_counter = 0
+""" Keep track """
 
 # Dict of loaded files, the keys are tuples of two
 # input parameters of the ultraimport() function: file_path and the package parameter
@@ -52,697 +54,6 @@ import_ongoing_stack = {}
 # Print debug output, especially for code transformation
 debug = False
 #debug = True
-
-##################
-# ERROR HANDLING #
-##################
-
-# TODO: Switch to internal Python code info object
-CodeInfo = collections.namedtuple('CodeInfo', ['source', 'file_path', 'line', 'offset'])
-
-class ErrorRendererMixin():
-    """ Mixin for Exception classes with some helper functions, mainly for rendering data to console """
-
-    def render_table(self, data):
-        """
-        Render a table for error output on console output.
-
-        The tables are meant to always have to columns with labels in the first
-        column and values in the second column.
-        """
-
-        assert type(data) == list
-        column1_size = 2
-        column2_size = 2
-
-        # First we identify the column width
-        for k, v in data:
-            column1_size = max(column1_size, len(str(k)))
-            column2_size = max(column2_size, len(str(v)))
-
-        table_lines = [ f" {k:>{column1_size}} │ {v}" for k, v in data ]
-
-        return '\n'.join(table_lines) + '\n'
-
-    def render_header(self, headline, message):
-        headline_border = '─' * len(headline)
-        return f"""
-
-┌─{headline_border}─┐
-│ {headline} │
-└─{headline_border}─┘
-
-{message}
-"""
-
-    def render_suggestion(self, line1, line2):
-        return f"\n\n ╲ {line1}\n ╱ {line2}\n"
-
-    def find_frame(self, frames, depth=1):
-        while True:
-            try:
-                frame = frames[0 - depth]
-                depth += 1
-                if frame.filename == __file__ or '<frozen importlib._bootstrap' in frame.filename:
-                    continue
-            except IndexError as exc:
-                break
-            return frame
-
-class RewrittenImportError(ImportError, ErrorRendererMixin):
-    def __init__(self, message='', combine=None, code_info=None, object_to_import=None, *args):
-
-        super().__init__('')
-
-        if combine and len(combine) > 0:
-            for e in combine:
-                if type(e) is not ResolveImportError:
-                    raise AttributeError(f"Type of combined exceptions in 'combine' attribute must be 'ultraimport.Error', but it was '{type(e)}'")
-
-        if not combine or (len(combine) < 1):
-            raise AttributeError("Missing errors of rewritten imports in 'combine' attribute")
-
-        error_table = []
-        if code_info:
-            if type(code_info) is not CodeInfo:
-                code_info = CodeInfo(*code_info)
-
-            error_table.extend([
-                ('Original source file', f"'{code_info.file_path}', line {code_info.line}:{code_info.offset}"),
-                ('Original source code', code_info.source),
-            ])
-
-        exc_type, exc_value, exc_traceback = sys.exc_info()
-        frame = traceback.extract_tb(exc_traceback)[0]
-        error_table.extend([
-            ('Preprocessed source file', f"{frame.filename}:{frame.lineno}"),
-        ])
-
-        error_table.append(('Error details', f"Could not find resource '{object_to_import}' in any of the following files:"))
-        for e in combine:
-            error_table.append(('', f'- {e.file_path_resolved}'))
-            error_table.append(('', f'  (Possible reason: {e.reason})'))
-
-        header = self.render_header('Rewritten Import Error', 'A relative import statement was transparently rewritten and failed.')
-        body = self.render_table(error_table)
-
-        suggestion = self.render_suggestion('Check if the required package or module really exists in your file system.',
-            'If you know the path but cannot change the import statement, use dependency injection to inject the resource.')
-
-        self.msg = f"{header}\n{body}{suggestion}"
-
-    def find_cause(self, tb=None, depth=0):
-        frame = None
-        while True:
-            try:
-                frame = sys._getframe(depth)
-                depth += 1
-                if frame.f_code.co_filename == __file__ or '<frozen importlib._bootstrap' in frame.f_code.co_filename:
-                    continue
-            except ValueError as exc:
-                break
-        return frame
-
-class CircularImportError(ImportError, ErrorRendererMixin):
-    def __init__(self, message=None, file_path=None, file_path_resolved=None, *args):
-
-        super().__init__()
-
-        header = self.render_header('Circular Import Error', 'An unresolved circular import was detected while importing a file.')
-
-        error_table = []
-        suggestion = ''
-
-        #import pprint
-        #pprint.pprint(traceback.extract_stack())
-
-        frame = self.find_frame(frames=traceback.extract_stack())
-        error_table.extend([
-            ('Source file', f"{frame.filename}:{frame.lineno}"),
-            ('Happend in', frame.name),
-            ('Source code', frame.line),
-            ('Import file_path', file_path),
-            ('Resolved file_path', file_path_resolved),
-        ])
-
-        suggestion = self.render_suggestion('You can use the ultraimport() parameter `lazy=True` to resolve circular dependencies.',
-            'This will only actually load imported modules and callables when they are used for the first time.')
-
-        body = self.render_table(error_table)
-
-        self.msg = f"{header}\n{body}{suggestion}"
-
-class ExecuteImportError(ImportError, ErrorRendererMixin):
-    def __init__(self, message=None, file_path=None, file_path_resolved=None, from_exception=None, depth=2, *args):
-
-        super().__init__()
-
-        # Save file_path for later analyzation
-        self.file_path = file_path
-        self.file_path_resolved = file_path_resolved
-        # Store the original reason/message for later
-        self.reason = message
-
-        header = self.render_header('Execute Import Error', 'An import file could be found and read, but an error happened while executing it.')
-        suggestion = ''
-
-        frame = traceback.extract_tb(from_exception.__traceback__)[-1]
-        error_table = [
-            ('Source file', f"{frame.filename}:{frame.lineno}"),
-            ('Happend in', frame.name),
-            ('Source code', frame.line)
-        ]
-
-        if from_exception and from_exception.msg == 'attempted relative import with no known parent package':
-            error_table.append(('Possible reason', 'A subsequent, relative import statement was found, but not handled.'))
-
-            suggestion = self.render_suggestion('To handle the relative import from above, use the ultraimport() parameter `recurse=True`.',
-                'This will activate automatic rewriting of subsequent, relative imports. Alternatively set `package=<int>` to create a virtual package.')
-        if from_exception and from_exception.msg == 'attempted relative import beyond top-level package':
-            error_table.append(('Possible reason', 'A subsequent, relative import statement was found, but not handled correctly.'))
-
-            suggestion = self.render_suggestion('To handle the relative import from above, use the ultraimport() parameter `recurse=True`.',
-                'This will activate automatic rewriting of subsequent, relative imports. Alternatively set `package=<int>` to create a virtual package.')
-
-        error_table.append(('Original error', f'"{from_exception.msg}"'))
-        body = self.render_table(error_table)
-
-        self.msg = f"{header}\n{body}{suggestion}"
-
-class ResolveImportError(ImportError, ErrorRendererMixin):
-    def __init__(self, message=None, file_path=None, file_path_resolved=None, from_exception=None, *args):
-
-        super().__init__()
-
-        # Save file_path for later analyzation
-        self.file_path = file_path
-        self.file_path_resolved = file_path_resolved
-        # Store the original reason/message for later
-        self.reason = message
-
-        header = self.render_header('Resolve Import Error', 'An import file could not be found or not be read.')
-
-        error_table = [
-            ('Import file_path', self.file_path),
-            ('Resolved file_path', self.file_path_resolved),
-            ('Possible reason', self.reason)
-        ]
-
-        suggestion = ''
-        if file_path_resolved and not file_path_resolved.endswith('.py'):
-            maybe_path = file_path_resolved + '.py'
-            if os.path.exists(maybe_path):
-                suggestion = self.render_suggestion(f"Did you mean to import '{maybe_path}'?",
-                    "You need to add the file extension '.py' to the file_path.")
-
-        if not suggestion:
-            suggestion = self.render_suggestion('Check the resolved `file_path` and find out why the file is not readable.',
-                'Maybe you have a typo in the `file_path` or maybe the parent directory does not exist or is not readable?')
-
-        body = self.render_table(error_table)
-
-        self.msg = f"{header}\n{body}{suggestion}"
-
-
-################
-# LAZY LOADING #
-################
-
-class LazyCass():
-    """ Lazily-loaded class that triggers module loading on access """
-
-    # TODO: https://stackoverflow.com/questions/61942205/lazy-class-factory
-    pass
-
-class LazyCallable():
-    """ Lazily-loaded callable that triggers module loading on access """
-    def __init__(self, importer, callable_name):
-        self._importer = importer
-        self._callable_name = callable_name
-
-    def __call__(self, *args, **kwargs):
-        if not hasattr(self, '_callable'):
-            imported_module = self._importer()
-            self._callable = getattr(imported_module, self._callable_name)
-
-        return self._callable(*args, **kwargs)
-
-class LazyModule(types.ModuleType):
-    """ Lazily-loaded module that triggers loading on attribute access """
-
-    def __init__(self, name, file_path, importer):
-        super().__init__(name)
-        self._importer = importer
-        self.__file__ = file_path
-
-    def __getattr__(self, key):
-        if key == '_module':
-            self._module = self._importer()
-            return self._module
-        return self._module.__getattribute__(key)
-
-class Loader:
-    """ Loader factory that returns either SourceFileLoader or ExtensionFileLoader depending on file_path """
-    def __new__(cls, name, file_path, *args, **kwargs):
-        _, suffix = os.path.splitext(file_path)
-
-        if suffix in importlib.machinery.EXTENSION_SUFFIXES:
-            return ExtensionFileLoader(name, file_path)
-
-        return SourceFileLoader(name, file_path, *args, **kwargs)
-
-class ExtensionFileLoader(importlib.machinery.ExtensionFileLoader):
-    pass
-
-class SourceFileLoader(importlib.machinery.SourceFileLoader):
-    """ Preprocessing Python source file loader """
-
-    def __init__(self, name, file_path, preprocessor=None, use_cache=True, cache_path_prefix=None):
-        # Note: It seems the module name here is not really used in Python internally
-        super().__init__(name, file_path)
-        self.preprocessor = preprocessor
-        self.use_cache = use_cache
-        self.cache_path_prefix = cache_path_prefix
-        if self.preprocessor:
-            self.check_preprocess(file_path)
-
-    def check_preprocess(self, file_path):
-        #print('CHECK FILE', file_path)
-        file_name, file_extension = os.path.splitext(file_path)
-
-        # This is the file_path we pretend to be loading, so it appears in stack traces
-        self.preprocess_file_path_display = f"{file_name}__preprocessed__{file_extension}"
-
-        dir_name, file_name = os.path.split(file_name)
-
-        # Add cache prefix to dir_name
-        if self.cache_path_prefix:
-            if os.path.isabs(self.cache_path_prefix):
-                dir_name = f"{self.cache_path_prefix}{os.sep}{dir_name}"
-            else:
-                dir_name = f"{dir_name}{os.sep}{self.cache_path_prefix}"
-
-        # This is the file_path we are really loading
-        self.preprocess_file_path = f"{dir_name}{os.sep}{file_name}__preprocessed__{file_extension}"
-
-        # Check if preprocessed file is outdated, if yes, run the preprocessing again
-        if self.use_cache and os.path.exists(self.preprocess_file_path):
-            #print('CHECK CACHE STILL VALID?', file_path, self.preprocess_file_path)
-            preprocessed = os.stat(self.preprocess_file_path)
-            original = os.stat(file_path)
-            if original.st_mtime > preprocessed.st_mtime:
-                self.preprocess(file_path)
-        else:
-            self.preprocess(file_path)
-
-    def ensure_dir(self, path):
-        dir_name, _ = os.path.split(path)
-        if not os.path.exists(dir_name):
-            os.makedirs(dir_name)
-
-    def preprocess(self, file_path):
-        #print('PREP', file_path, self.use_cache, time.time())
-        self.code = self.get_data(file_path, direct=True)
-        self.code = self.preprocessor(self.code, file_path=file_path)
-
-        if not self.use_cache:
-            if os.path.exists(self.preprocess_file_path):
-                os.remove(self.preprocess_file_path)
-            return
-
-        self.ensure_dir(self.preprocess_file_path)
-
-        # Write processed code back for caching
-        with open(self.preprocess_file_path, 'wb') as f:
-            f.write(f"# NOTE: This file was automatically generated from:\n# {file_path}\n# DO NOT CHANGE DIRECTLY! {time.time()}\n".encode())
-            f.write(self.code.encode() if hasattr(self.code, 'encode') else self.code)
-
-            #os.utime(self.preprocess_file_path, (original['mtime'], original['mtime']))
-
-    def is_bytecode(self, file_path):
-        return file_path[file_path.rindex("."):] in importlib.machinery.BYTECODE_SUFFIXES
-
-    def path_stats(self, path):
-        #print('STATS START', path)
-        if not self.use_cache:
-            #print('CACHE OFF')
-            # Invalidate bytecode cache
-            raise OSError
-        else:
-            if self.preprocessor:
-                #print('PRE STATS', path, self.preprocess_file_path)
-                return super().path_stats(self.preprocess_file_path)
-
-            #print('STATS', path)
-            return super().path_stats(path)
-
-    def get_data(self, path, direct=False):
-        _, suffix = os.path.splitext(path)
-        #print('GET DATA', direct, self.preprocessor, path, suffix)
-
-        # We are importing a bytecode file, so it should be direct
-        if len(suffix) > 0 and suffix in importlib.machinery.BYTECODE_SUFFIXES:
-            direct = True
-
-        if not direct and self.preprocessor:
-            if path == self.preprocess_file_path_display:
-                path = self.preprocess_file_path
-            if not os.path.exists(path):
-                #print('GET PREP CODE', path)
-                return self.code
-        #print('GET DIRECT')
-        return super().get_data(path)
-
-    def get_filename(self, fullname):
-        if self.preprocessor:
-            return self.preprocess_file_path_display
-        return self.path
-
-class RewriteImport(ast.NodeTransformer):
-
-    def __init__(self, file_path=None, *args):
-        super().__init__(*args)
-        self.file_path = file_path
-
-    @classmethod
-    def transform_imports(cls, source, file_path=None, use_cache=True):
-
-        tree = ast.parse(source)
-
-        if debug:
-            print('--IN--------')
-            print(ast.dump(tree))
-            astprettier.pprint(tree, show_offsets=False, ns_prefix='ast')
-            print('---------')
-
-        tree = ast.fix_missing_locations(cls(file_path=file_path).visit(tree))
-
-        unparsed = ast.unparse(tree)
-
-        if debug:
-            print('--OUT--------')
-            print(unparsed)
-            print('---------')
-
-        return unparsed.encode()
-
-
-    def gen_try(self, try_body, except_body = ast.Pass(), except_alias = 'e', except_error = 'ultraimport.ResolveImportError'):
-        if not except_body:
-            except_body = ast.Pass()
-        return ast.Try(
-            body=[try_body],
-            handlers=[
-                ast.ExceptHandler(
-                    type=ast.Name(id=except_error, ctx=ast.Load()),
-                    name=except_alias,
-                    body=[except_body],
-                ),
-            ],
-            orelse=[],
-            finalbody=[],
-        )
-
-    def gen_assign(self, targets, value):
-        return ast.Assign(
-            targets=targets,
-            value=value
-        )
-
-    def gen_keyword(self, name, value):
-        if isinstance(value, ast.Tuple) or isinstance(value, ast.Call):
-            return ast.keyword(arg=name, value=value)
-        return ast.keyword(arg=name, value=ast.Constant(value=value, kind=None))
-
-    def gen_call(self, name, args=[], keywords=[]):
-        return ast.Call(func=ast.Name(id=name, ctx=ast.Load()), args=args, keywords=keywords)
-
-    def gen_import_call(self, file_path, import_elts=None):
-        keywords = [
-            self.gen_keyword('recurse', True),
-            # TODO: Remove and use cache
-            #self.gen_keyword('use_cache', False),
-        ]
-
-        if import_elts == '*':
-            keywords.append(self.gen_keyword('add_to_ns', self.gen_call('add_to_ns')))
-
-        return ast.Call(
-            func=ast.Name(id='ultraimport', ctx=ast.Load()),
-            args=[
-                ast.Constant(value=file_path, kind=None),
-                self.gen_keyword('objects_to_import', import_elts)
-            ],
-            keywords=keywords
-        )
-
-    def gen_code_info(self, source, file_path, line, offset):
-        return ast.Tuple(elts=[
-                ast.Constant(value=source, kind=None),
-                ast.Constant(value=file_path, kind=None),
-                ast.Constant(value=line, kind=None),
-                ast.Constant(value=offset, kind=None),
-            ],
-            ctx=ast.Load(),
-        )
-
-    def gen_raise(self, alias, code_info, combine, object_to_import):
-        return ast.Raise(
-            exc=ast.Call(
-                func=ast.Name(id='ultraimport.RewrittenImportError', ctx=ast.Load()),
-                #args=[ast.Constant(value=message, kind=None)],
-                args=[],
-                keywords=[
-                    self.gen_keyword('code_info', code_info),
-                    self.gen_keyword('object_to_import', object_to_import),
-                    ast.keyword(
-                        arg='combine',
-                        value=ast.List(
-                            elts=[ ast.Name(id=name, ctx=ast.Load()) for name in combine ],
-                            ctx=ast.Load(),
-                        ),
-                    ),
-                ],
-            ),
-            #cause=None,
-            cause=ast.Constant(value=None, kind=None),
-        )
-
-    def gen_import(self, alias, module_path, object_name=None):
-        if object_name == '*':
-            return self.gen_import_call(module_path, object_name)
-        elif object_name:
-            objects_tuple = self.gen_objects_tuple([object_name])
-            aliasses_tuple = self.gen_aliasses_tuple([alias])
-            call_node = self.gen_import_call(module_path, objects_tuple)
-            return self.gen_assign([aliasses_tuple], call_node)
-
-        call_node = self.gen_import_call(module_path)
-        assign_node = self.gen_assign([ast.Name(id=alias, ctx=ast.Store())], call_node)
-        return assign_node
-
-    def gen_aliasses_tuple(self, aliasses):
-        return ast.Tuple(elts=[ ast.Name(id=alias, ctx=ast.Store()) for alias in aliasses ], ctx=ast.Store())
-
-    def gen_objects_tuple(self, object_names):
-        if not object_names:
-            return None
-        return ast.Tuple(elts=[ast.Constant(value=name) for name in object_names], ctx=ast.Load())
-
-    def visit_ImportFrom(self, node):
-        """ Rewrite all `import .. from` statements """
-
-        node = self.generic_visit(node)
-
-        #code = ast.unparse(node)
-        #print('NODE CODE:', code)
-
-        ####
-        # For imports with "from . import something"
-        ####
-
-        imports = []
-        up = (node.level - 1) * f'..{os.sep}'
-
-        for n in node.names:
-            name = n.name if not node.module else node.module
-            module_path = f"__dir__/{up}__init__.py"
-            module2_path = f"__dir__/{up}{name}/__init__.py"
-            module3_path = f"__dir__/{up}{name}.py"
-            alias = n.asname if n.asname else n.name
-
-            try_node = None
-
-            code_info = self.gen_code_info(source=ast.unparse(node), file_path=self.file_path, line=node.lineno, offset=node.col_offset)
-
-            if node.module:
-                import1_node = self.gen_import(alias, module2_path, n.name)
-                import2_node = self.gen_import(alias, module3_path, n.name)
-                raise_node = self.gen_raise(name, combine=['e', 'e2'], code_info=code_info, object_to_import=n.name)
-                try2_node = self.gen_try(import2_node, raise_node, 'e2')
-                try_node = self.gen_try(import1_node, try2_node, 'e')
-
-            else:
-                import1_node = self.gen_import(alias, module_path, name)
-                import2_node = self.gen_import(alias, module2_path, name)
-                import3_node = self.gen_import(alias, module3_path)
-                raise_node = self.gen_raise(name, combine=['e', 'e2', 'e3'], code_info=code_info, object_to_import=name)
-                try3_node = self.gen_try(import3_node, raise_node, 'e3')
-                try2_node = self.gen_try(import2_node, try3_node, 'e2')
-                try_node = self.gen_try(import1_node, try2_node, 'e')
-
-            imports.append(try_node)
-            ast.copy_location(try_node, node)
-
-        return imports
-
-
-def get_module_name(file_path):
-    """
-    Return Python compatible module name from file_path. Replace dash and dot characters with underscore characters.
-
-    Parameters:
-        file_path (str): File path to a module or directory path to a package
-
-    Returns:
-        module_name (str): Extracted and escaped name of the module
-    """
-
-    # Try Python internal approach first
-    name = inspect.getmodulename(file_path)
-
-    # If Python cannot determine a name, we will simply split off any file extensions
-    if not name:
-        name, suffix = os.path.splitext(os.path.basename(file_path))
-
-    # And replace all illegal characters
-    return name.replace('-', '_').replace('.', '_')
-
-def get_package_name(file_path, package):
-    """
-    Generate necessary package hierarchy according to the `package` parameter and
-    create virtual namespace packages accordingly.
-
-    Parameters:
-        file_path (str): File path to a module or directory path to a package
-        package (str): Provide package name as a string. Can contain multiple parts separated by dots.
-                       The `__path__` of the package will be set to the parent directory of `file_path`.
-        package (int): Derive package name from the parent directory name(s) of `file_path` using <package> number
-                       of parent directories.
-
-    Returns:
-        A tuple containing
-        package_name (str): Name of the package
-        package_path (str): Path to the package
-        package_module (types.ModuleType): Package module object
-    """
-    path = os.path.abspath(file_path if os.path.isdir(file_path) else os.path.dirname(file_path))
-    if type(package) == str:
-        rest, dot, name = package.rpartition('.')
-        parent_package = None
-        if rest:
-            parent_package = get_package_name(os.path.dirname(file_path), rest)
-        package_module = create_ns_package(package, path)
-        if parent_package:
-            package_module.__package__ = parent_package
-        return package, path, package_module
-    elif type(package) == int:
-        pathes = os.path.dirname(os.path.abspath(file_path)).split(os.sep)[-package:]
-        package = '.'.join(pathes)
-        return get_package_name(path, package)
-    return None, None, None
-
-def find_caller(return_frame=False):
-    """
-    Find out who is calling by looking at the stack and searching for the first external frame.
-
-    Parameters:
-        return_frame (bool): If True, also return the stack frame.
-
-    Returns:
-        Depending on the parameters returns *one* of the following:
-        str: A string with the caller name
-        str, frame: A string with the caller name, the stack frame that was used to extract the caller name
-    """
-
-    frame = inspect.currentframe()
-
-    # Note: If we run a compiled ultraimport module from Python REPL, there will only be one frame
-    #       on the stack called <stdin>, and there will be no ultraimport frame, so __do not__ go back
-    #       one frame automatically.
-    #frame = frame.f_back
-
-    while frame:
-        if frame.f_code.co_filename != __file__:
-            break
-        frame = frame.f_back
-
-    caller = frame.f_code.co_filename
-
-    # If we are being used from a compiled module, we need to do
-    # some more steps to extract the file name of the compiled module
-    if caller == '<frozen importlib._bootstrap>':
-        if 'args' in frame.f_locals and len(frame.f_locals['args']) > 0:
-            caller = frame.f_locals['args'][0].__file__
-        else:
-            raise Exception('Cannot extract file name from caller. Please report this issue. In the meantime, you can use  when using ultraimport(..., caller=__file__)')
-
-    if caller == '<stdin>':
-        caller = f"{os.getcwd()}{os.sep}<stdin>"
-
-    if return_frame:
-        return caller, frame
-
-    del frame
-
-    return caller
-
-def create_ns_package(package_name, package_path, caller=None):
-    """
-    Create one or more dynamic namespace packages on the fly.
-
-    Parameters:
-        package_name (str): Name of the namespace package that should be created.
-
-        package_path (str): File system path of a directory that should be associated with the package.
-            You can use the special string `__dir__` to refer to the directory of the caller. If run from a Python
-            REPL, the current working directory will be used for `__dir__`.
-
-        caller (str): File system path to the file of the calling module. If you use advanced debugging tools
-            (or want to save some CPU cycles) you might want to set `caller=__file__`. Otherwise the caller
-            is derrived from the frame stack.
-    """
-
-    if '__dir__' in package_path:
-        if not caller:
-            caller = find_caller()
-        package_path = os.path.abspath(package_path.replace('__dir__', os.path.dirname(caller)))
-
-    loader = importlib._bootstrap_external._NamespaceLoader('loader', [package_path], None)
-    spec = importlib.util.spec_from_loader(package_name, loader)
-    package = importlib.util.module_from_spec(spec)
-    package.__path__ = loader._path
-    sys.modules[package_name] = package
-    return package
-
-def find_existing_module_by_path(file_path):
-    for name, module in sys.modules.items():
-        if module.__file__ == os.path.abspath(file_path):
-            return module
-
-    return None
-
-def check_file_is_importable(file_path, file_path_orig):
-    if not os.path.exists(file_path):
-        raise ResolveImportError('File does not exist.', file_path=file_path_orig, file_path_resolved=file_path)
-
-    if not os.path.isfile(file_path):
-        raise ResolveImportError('Object exists but is not a file.', file_path=file_path_orig, file_path_resolved=file_path)
-
-    if not os.access(file_path, os.R_OK):
-        raise ResolveImportError('File exists but no read access.', file_path=file_path_orig, file_path_resolved=file_path)
-
-    return True
 
 def ultraimport(file_path, objects_to_import=None, add_to_ns=None, preprocessor=None, package=None, caller=None, use_cache=True, lazy=False, recurse=False, inject=None, use_preprocessor_cache=True, cache_path_prefix=None):
     """
@@ -996,6 +307,710 @@ def ultraimport(file_path, objects_to_import=None, add_to_ns=None, preprocessor=
             print('module:', module)
 
         return module
+
+##################
+# ERROR HANDLING #
+##################
+
+# TODO: Switch to internal Python code info object
+CodeInfo = collections.namedtuple('CodeInfo', ['source', 'file_path', 'line', 'offset'])
+
+class ErrorRendererMixin():
+    """ Mixin for Exception classes with some helper functions, mainly for rendering data to console """
+
+    def render_table(self, data):
+        """
+        Render a table for error output on console output.
+
+        The tables are meant to always have to columns with labels in the first
+        column and values in the second column.
+        """
+
+        assert type(data) == list
+        column1_size = 2
+        column2_size = 2
+
+        # First we identify the column width
+        for k, v in data:
+            column1_size = max(column1_size, len(str(k)))
+            column2_size = max(column2_size, len(str(v)))
+
+        table_lines = [ f" {k:>{column1_size}} │ {v}" for k, v in data ]
+
+        return '\n'.join(table_lines) + '\n'
+
+    def render_header(self, headline, message):
+        headline_border = '─' * len(headline)
+        return f"""
+
+┌─{headline_border}─┐
+│ {headline} │
+└─{headline_border}─┘
+
+{message}
+"""
+
+    def render_suggestion(self, line1, line2):
+        return f"\n\n ╲ {line1}\n ╱ {line2}\n"
+
+    def find_frame(self, frames, depth=1):
+        while True:
+            try:
+                frame = frames[0 - depth]
+                depth += 1
+                if frame.filename == __file__ or '<frozen importlib._bootstrap' in frame.filename:
+                    continue
+            except IndexError as exc:
+                break
+            return frame
+
+class RewrittenImportError(ImportError, ErrorRendererMixin):
+    def __init__(self, message='', combine=None, code_info=None, object_to_import=None, *args):
+
+        super().__init__('')
+
+        if combine and len(combine) > 0:
+            for e in combine:
+                if type(e) is not ResolveImportError:
+                    raise AttributeError(f"Type of combined exceptions in 'combine' attribute must be 'ultraimport.Error', but it was '{type(e)}'")
+
+        if not combine or (len(combine) < 1):
+            raise AttributeError("Missing errors of rewritten imports in 'combine' attribute")
+
+        error_table = []
+        if code_info:
+            if type(code_info) is not CodeInfo:
+                code_info = CodeInfo(*code_info)
+
+            error_table.extend([
+                ('Original source file', f"'{code_info.file_path}', line {code_info.line}:{code_info.offset}"),
+                ('Original source code', code_info.source),
+            ])
+
+        exc_type, exc_value, exc_traceback = sys.exc_info()
+        frame = traceback.extract_tb(exc_traceback)[0]
+        error_table.extend([
+            ('Preprocessed source file', f"{frame.filename}:{frame.lineno}"),
+        ])
+
+        error_table.append(('Error details', f"Could not find resource '{object_to_import}' in any of the following files:"))
+        for e in combine:
+            error_table.append(('', f'- {e.file_path_resolved}'))
+            error_table.append(('', f'  (Possible reason: {e.reason})'))
+
+        header = self.render_header('Rewritten Import Error', 'A relative import statement was transparently rewritten and failed.')
+        body = self.render_table(error_table)
+
+        suggestion = self.render_suggestion('Check if the required package or module really exists in your file system.',
+            'If you know the path but cannot change the import statement, use dependency injection to inject the resource.')
+
+        self.msg = f"{header}\n{body}{suggestion}"
+
+    def find_cause(self, tb=None, depth=0):
+        frame = None
+        while True:
+            try:
+                frame = sys._getframe(depth)
+                depth += 1
+                if frame.f_code.co_filename == __file__ or '<frozen importlib._bootstrap' in frame.f_code.co_filename:
+                    continue
+            except ValueError as exc:
+                break
+        return frame
+
+class CircularImportError(ImportError, ErrorRendererMixin):
+    def __init__(self, message=None, file_path=None, file_path_resolved=None, *args):
+
+        super().__init__()
+
+        header = self.render_header('Circular Import Error', 'An unresolved circular import was detected while importing a file.')
+
+        error_table = []
+        suggestion = ''
+
+        #import pprint
+        #pprint.pprint(traceback.extract_stack())
+
+        frame = self.find_frame(frames=traceback.extract_stack())
+        error_table.extend([
+            ('Source file', f"{frame.filename}:{frame.lineno}"),
+            ('Happend in', frame.name),
+            ('Source code', frame.line),
+            ('Import file_path', file_path),
+            ('Resolved file_path', file_path_resolved),
+        ])
+
+        suggestion = self.render_suggestion('You can use the ultraimport() parameter `lazy=True` to resolve circular dependencies.',
+            'This will only actually load imported modules and callables when they are used for the first time.')
+
+        body = self.render_table(error_table)
+
+        self.msg = f"{header}\n{body}{suggestion}"
+
+class ExecuteImportError(ImportError, ErrorRendererMixin):
+    def __init__(self, message=None, file_path=None, file_path_resolved=None, from_exception=None, depth=2, *args):
+
+        super().__init__()
+
+        # Save file_path for later analyzation
+        self.file_path = file_path
+        self.file_path_resolved = file_path_resolved
+        # Store the original reason/message for later
+        self.reason = message
+
+        header = self.render_header('Execute Import Error', 'An import file could be found and read, but an error happened while executing it.')
+        suggestion = ''
+
+        frame = traceback.extract_tb(from_exception.__traceback__)[-1]
+        error_table = [
+            ('Source file', f"{frame.filename}:{frame.lineno}"),
+            ('Happend in', frame.name),
+            ('Source code', frame.line)
+        ]
+
+        if from_exception and from_exception.msg == 'attempted relative import with no known parent package':
+            error_table.append(('Possible reason', 'A subsequent, relative import statement was found, but not handled.'))
+
+            suggestion = self.render_suggestion('To handle the relative import from above, use the ultraimport() parameter `recurse=True`.',
+                'This will activate automatic rewriting of subsequent, relative imports. Alternatively set `package=<int>` to create a virtual package.')
+        if from_exception and from_exception.msg == 'attempted relative import beyond top-level package':
+            error_table.append(('Possible reason', 'A subsequent, relative import statement was found, but not handled correctly.'))
+
+            suggestion = self.render_suggestion('To handle the relative import from above, use the ultraimport() parameter `recurse=True`.',
+                'This will activate automatic rewriting of subsequent, relative imports. Alternatively set `package=<int>` to create a virtual package.')
+
+        error_table.append(('Original error', f'"{from_exception.msg}"'))
+        body = self.render_table(error_table)
+
+        self.msg = f"{header}\n{body}{suggestion}"
+
+class ResolveImportError(ImportError, ErrorRendererMixin):
+    def __init__(self, message=None, file_path=None, file_path_resolved=None, from_exception=None, *args):
+
+        super().__init__()
+
+        # Save file_path for later analyzation
+        self.file_path = file_path
+        self.file_path_resolved = file_path_resolved
+        # Store the original reason/message for later
+        self.reason = message
+
+        header = self.render_header('Resolve Import Error', 'An import file could not be found or not be read.')
+
+        error_table = [
+            ('Import file_path', self.file_path),
+            ('Resolved file_path', self.file_path_resolved),
+            ('Possible reason', self.reason)
+        ]
+
+        suggestion = ''
+        if file_path_resolved and not file_path_resolved.endswith('.py'):
+            maybe_path = file_path_resolved + '.py'
+            if os.path.exists(maybe_path):
+                suggestion = self.render_suggestion(f"Did you mean to import '{maybe_path}'?",
+                    "You need to add the file extension '.py' to the file_path.")
+
+        if not suggestion:
+            suggestion = self.render_suggestion('Check the resolved `file_path` and find out why the file is not readable.',
+                'Maybe you have a typo in the `file_path` or maybe the parent directory does not exist or is not readable?')
+
+        body = self.render_table(error_table)
+
+        self.msg = f"{header}\n{body}{suggestion}"
+
+
+################
+# LAZY LOADING #
+################
+
+class LazyCass():
+    """ Lazily-loaded class that triggers module loading on access """
+
+    # TODO: https://stackoverflow.com/questions/61942205/lazy-class-factory
+    pass
+
+class LazyCallable():
+    """ Lazily-loaded callable that triggers module loading on access """
+    def __init__(self, importer, callable_name):
+        self._importer = importer
+        self._callable_name = callable_name
+
+    def __call__(self, *args, **kwargs):
+        if not hasattr(self, '_callable'):
+            imported_module = self._importer()
+            self._callable = getattr(imported_module, self._callable_name)
+
+        return self._callable(*args, **kwargs)
+
+class LazyModule(types.ModuleType):
+    """ Lazily-loaded module that triggers loading on attribute access """
+
+    def __init__(self, name, file_path, importer):
+        super().__init__(name)
+        self._importer = importer
+        self.__file__ = file_path
+
+    def __getattr__(self, key):
+        if key == '_module':
+            self._module = self._importer()
+            return self._module
+        return self._module.__getattribute__(key)
+
+###########
+# LOADERS #
+###########
+
+class Loader:
+    """ Loader factory that returns either SourceFileLoader or ExtensionFileLoader depending on file_path """
+    def __new__(cls, name, file_path, *args, **kwargs):
+        _, suffix = os.path.splitext(file_path)
+
+        if suffix in importlib.machinery.EXTENSION_SUFFIXES:
+            return ExtensionFileLoader(name, file_path)
+
+        return SourceFileLoader(name, file_path, *args, **kwargs)
+
+class ExtensionFileLoader(importlib.machinery.ExtensionFileLoader):
+    pass
+
+class SourceFileLoader(importlib.machinery.SourceFileLoader):
+    """ Preprocessing Python source file loader """
+
+    def __init__(self, name, file_path, preprocessor=None, use_cache=True, cache_path_prefix=None):
+        # Note: It seems the module name here is not really used in Python internally
+        super().__init__(name, file_path)
+        self.preprocessor = preprocessor
+        self.use_cache = use_cache
+        self.cache_path_prefix = cache_path_prefix
+        if self.preprocessor:
+            self.check_preprocess(file_path)
+
+    def check_preprocess(self, file_path):
+        #print('CHECK FILE', file_path)
+        file_name, file_extension = os.path.splitext(file_path)
+
+        # This is the file_path we pretend to be loading, so it appears in stack traces
+        self.preprocess_file_path_display = f"{file_name}__preprocessed__{file_extension}"
+
+        dir_name, file_name = os.path.split(file_name)
+
+        # Add cache prefix to dir_name
+        if self.cache_path_prefix:
+            if os.path.isabs(self.cache_path_prefix):
+                dir_name = f"{self.cache_path_prefix}{os.sep}{dir_name}"
+            else:
+                dir_name = f"{dir_name}{os.sep}{self.cache_path_prefix}"
+
+        # This is the file_path we are really loading
+        self.preprocess_file_path = f"{dir_name}{os.sep}{file_name}__preprocessed__{file_extension}"
+
+        # Check if preprocessed file is outdated, if yes, run the preprocessing again
+        if self.use_cache and os.path.exists(self.preprocess_file_path):
+            #print('CHECK CACHE STILL VALID?', file_path, self.preprocess_file_path)
+            preprocessed = os.stat(self.preprocess_file_path)
+            original = os.stat(file_path)
+            if original.st_mtime > preprocessed.st_mtime:
+                self.preprocess(file_path)
+        else:
+            self.preprocess(file_path)
+
+    def ensure_dir(self, path):
+        dir_name, _ = os.path.split(path)
+        if not os.path.exists(dir_name):
+            os.makedirs(dir_name)
+
+    def preprocess(self, file_path):
+        #print('PREP', file_path, self.use_cache, time.time())
+        self.code = self.get_data(file_path, direct=True)
+        self.code = self.preprocessor(self.code, file_path=file_path)
+
+        if not self.use_cache:
+            if os.path.exists(self.preprocess_file_path):
+                os.remove(self.preprocess_file_path)
+            return
+
+        self.ensure_dir(self.preprocess_file_path)
+
+        # Write processed code back for caching
+        with open(self.preprocess_file_path, 'wb') as f:
+            f.write(f"# NOTE: This file was automatically generated from:\n# {file_path}\n# DO NOT CHANGE DIRECTLY! {time.time()}\n".encode())
+            f.write(self.code.encode() if hasattr(self.code, 'encode') else self.code)
+
+            #os.utime(self.preprocess_file_path, (original['mtime'], original['mtime']))
+
+    def is_bytecode(self, file_path):
+        return file_path[file_path.rindex("."):] in importlib.machinery.BYTECODE_SUFFIXES
+
+    def path_stats(self, path):
+        #print('STATS START', path)
+        if not self.use_cache:
+            #print('CACHE OFF')
+            # Invalidate bytecode cache
+            raise OSError
+        else:
+            if self.preprocessor:
+                #print('PRE STATS', path, self.preprocess_file_path)
+                return super().path_stats(self.preprocess_file_path)
+
+            #print('STATS', path)
+            return super().path_stats(path)
+
+    def get_data(self, path, direct=False):
+        _, suffix = os.path.splitext(path)
+        #print('GET DATA', direct, self.preprocessor, path, suffix)
+
+        # We are importing a bytecode file, so it should be direct
+        if len(suffix) > 0 and suffix in importlib.machinery.BYTECODE_SUFFIXES:
+            direct = True
+
+        if not direct and self.preprocessor:
+            if path == self.preprocess_file_path_display:
+                path = self.preprocess_file_path
+            if not os.path.exists(path):
+                #print('GET PREP CODE', path)
+                return self.code
+        #print('GET DIRECT')
+        return super().get_data(path)
+
+    def get_filename(self, fullname):
+        if self.preprocessor:
+            return self.preprocess_file_path_display
+        return self.path
+
+###########
+# REWRITE #
+###########
+
+class RewriteImport(ast.NodeTransformer):
+
+    def __init__(self, file_path=None, *args):
+        super().__init__(*args)
+        self.file_path = file_path
+
+    @classmethod
+    def transform_imports(cls, source, file_path=None, use_cache=True):
+
+        tree = ast.parse(source)
+
+        if debug:
+            print('--IN--------')
+            print(ast.dump(tree))
+            astprettier.pprint(tree, show_offsets=False, ns_prefix='ast')
+            print('---------')
+
+        tree = ast.fix_missing_locations(cls(file_path=file_path).visit(tree))
+
+        unparsed = ast.unparse(tree)
+
+        if debug:
+            print('--OUT--------')
+            print(unparsed)
+            print('---------')
+
+        return unparsed.encode()
+
+
+    def gen_try(self, try_body, except_body = ast.Pass(), except_alias = 'e', except_error = 'ultraimport.ResolveImportError'):
+        if not except_body:
+            except_body = ast.Pass()
+        return ast.Try(
+            body=[try_body],
+            handlers=[
+                ast.ExceptHandler(
+                    type=ast.Name(id=except_error, ctx=ast.Load()),
+                    name=except_alias,
+                    body=[except_body],
+                ),
+            ],
+            orelse=[],
+            finalbody=[],
+        )
+
+    def gen_assign(self, targets, value):
+        return ast.Assign(
+            targets=targets,
+            value=value
+        )
+
+    def gen_keyword(self, name, value):
+        if isinstance(value, ast.Tuple) or isinstance(value, ast.Call):
+            return ast.keyword(arg=name, value=value)
+        return ast.keyword(arg=name, value=ast.Constant(value=value, kind=None))
+
+    def gen_call(self, name, args=[], keywords=[]):
+        return ast.Call(func=ast.Name(id=name, ctx=ast.Load()), args=args, keywords=keywords)
+
+    def gen_import_call(self, file_path, import_elts=None):
+        keywords = [
+            self.gen_keyword('recurse', True),
+            # TODO: Remove and use cache
+            #self.gen_keyword('use_cache', False),
+        ]
+
+        if import_elts == '*':
+            keywords.append(self.gen_keyword('add_to_ns', self.gen_call('add_to_ns')))
+
+        return ast.Call(
+            func=ast.Name(id='ultraimport', ctx=ast.Load()),
+            args=[
+                ast.Constant(value=file_path, kind=None),
+                self.gen_keyword('objects_to_import', import_elts)
+            ],
+            keywords=keywords
+        )
+
+    def gen_code_info(self, source, file_path, line, offset):
+        return ast.Tuple(elts=[
+                ast.Constant(value=source, kind=None),
+                ast.Constant(value=file_path, kind=None),
+                ast.Constant(value=line, kind=None),
+                ast.Constant(value=offset, kind=None),
+            ],
+            ctx=ast.Load(),
+        )
+
+    def gen_raise(self, alias, code_info, combine, object_to_import):
+        return ast.Raise(
+            exc=ast.Call(
+                func=ast.Name(id='ultraimport.RewrittenImportError', ctx=ast.Load()),
+                #args=[ast.Constant(value=message, kind=None)],
+                args=[],
+                keywords=[
+                    self.gen_keyword('code_info', code_info),
+                    self.gen_keyword('object_to_import', object_to_import),
+                    ast.keyword(
+                        arg='combine',
+                        value=ast.List(
+                            elts=[ ast.Name(id=name, ctx=ast.Load()) for name in combine ],
+                            ctx=ast.Load(),
+                        ),
+                    ),
+                ],
+            ),
+            #cause=None,
+            cause=ast.Constant(value=None, kind=None),
+        )
+
+    def gen_import(self, alias, module_path, object_name=None):
+        if object_name == '*':
+            return self.gen_import_call(module_path, object_name)
+        elif object_name:
+            objects_tuple = self.gen_objects_tuple([object_name])
+            aliasses_tuple = self.gen_aliasses_tuple([alias])
+            call_node = self.gen_import_call(module_path, objects_tuple)
+            return self.gen_assign([aliasses_tuple], call_node)
+
+        call_node = self.gen_import_call(module_path)
+        assign_node = self.gen_assign([ast.Name(id=alias, ctx=ast.Store())], call_node)
+        return assign_node
+
+    def gen_aliasses_tuple(self, aliasses):
+        return ast.Tuple(elts=[ ast.Name(id=alias, ctx=ast.Store()) for alias in aliasses ], ctx=ast.Store())
+
+    def gen_objects_tuple(self, object_names):
+        if not object_names:
+            return None
+        return ast.Tuple(elts=[ast.Constant(value=name) for name in object_names], ctx=ast.Load())
+
+    def visit_ImportFrom(self, node):
+        """ Rewrite all `import .. from` statements """
+
+        node = self.generic_visit(node)
+
+        #code = ast.unparse(node)
+        #print('NODE CODE:', code)
+
+        ####
+        # For imports with "from . import something"
+        ####
+
+        imports = []
+        up = (node.level - 1) * f'..{os.sep}'
+
+        for n in node.names:
+            name = n.name if not node.module else node.module
+            module_path = f"__dir__/{up}__init__.py"
+            module2_path = f"__dir__/{up}{name}/__init__.py"
+            module3_path = f"__dir__/{up}{name}.py"
+            alias = n.asname if n.asname else n.name
+
+            try_node = None
+
+            code_info = self.gen_code_info(source=ast.unparse(node), file_path=self.file_path, line=node.lineno, offset=node.col_offset)
+
+            if node.module:
+                import1_node = self.gen_import(alias, module2_path, n.name)
+                import2_node = self.gen_import(alias, module3_path, n.name)
+                raise_node = self.gen_raise(name, combine=['e', 'e2'], code_info=code_info, object_to_import=n.name)
+                try2_node = self.gen_try(import2_node, raise_node, 'e2')
+                try_node = self.gen_try(import1_node, try2_node, 'e')
+
+            else:
+                import1_node = self.gen_import(alias, module_path, name)
+                import2_node = self.gen_import(alias, module2_path, name)
+                import3_node = self.gen_import(alias, module3_path)
+                raise_node = self.gen_raise(name, combine=['e', 'e2', 'e3'], code_info=code_info, object_to_import=name)
+                try3_node = self.gen_try(import3_node, raise_node, 'e3')
+                try2_node = self.gen_try(import2_node, try3_node, 'e2')
+                try_node = self.gen_try(import1_node, try2_node, 'e')
+
+            imports.append(try_node)
+            ast.copy_location(try_node, node)
+
+        return imports
+
+##########
+# HELPER #
+##########
+
+def get_module_name(file_path):
+    """
+    Return Python compatible module name from file_path. Replace dash and dot characters with underscore characters.
+
+    Parameters:
+        file_path (str): File path to a module or directory path to a package
+
+    Returns:
+        module_name (str): Extracted and escaped name of the module
+    """
+
+    # Try Python internal approach first
+    name = inspect.getmodulename(file_path)
+
+    # If Python cannot determine a name, we will simply split off any file extensions
+    if not name:
+        name, suffix = os.path.splitext(os.path.basename(file_path))
+
+    # And replace all illegal characters
+    return name.replace('-', '_').replace('.', '_')
+
+def get_package_name(file_path, package):
+    """
+    Generate necessary package hierarchy according to the `package` parameter and
+    create virtual namespace packages accordingly.
+
+    Parameters:
+        file_path (str): File path to a module or directory path to a package
+        package (str): Provide package name as a string. Can contain multiple parts separated by dots.
+                       The `__path__` of the package will be set to the parent directory of `file_path`.
+        package (int): Derive package name from the parent directory name(s) of `file_path` using <package> number
+                       of parent directories.
+
+    Returns:
+        A tuple containing
+
+        package_name (str): Name of the package
+        package_path (str): Path to the package
+        package_module (types.ModuleType): Package module object
+    """
+    path = os.path.abspath(file_path if os.path.isdir(file_path) else os.path.dirname(file_path))
+    if type(package) == str:
+        rest, dot, name = package.rpartition('.')
+        parent_package = None
+        if rest:
+            parent_package = get_package_name(os.path.dirname(file_path), rest)
+        package_module = create_ns_package(package, path)
+        if parent_package:
+            package_module.__package__ = parent_package
+        return package, path, package_module
+    elif type(package) == int:
+        pathes = os.path.dirname(os.path.abspath(file_path)).split(os.sep)[-package:]
+        package = '.'.join(pathes)
+        return get_package_name(path, package)
+    return None, None, None
+
+def find_caller(return_frame=False):
+    """
+    Find out who is calling by looking at the stack and searching for the first external frame.
+
+    Parameters:
+        return_frame (bool): If True, also return the stack frame.
+
+    Returns:
+        Depending on the parameters returns *one* of the following:
+
+        str: A string with the caller name
+        str, frame: A string with the caller name, the stack frame that was used to extract the caller name
+    """
+
+    frame = inspect.currentframe()
+
+    # Note: If we run a compiled ultraimport module from Python REPL, there will only be one frame
+    #       on the stack called <stdin>, and there will be no ultraimport frame, so __do not__ go back
+    #       one frame automatically.
+    #frame = frame.f_back
+
+    while frame:
+        if frame.f_code.co_filename != __file__:
+            break
+        frame = frame.f_back
+
+    caller = frame.f_code.co_filename
+
+    # If we are being used from a compiled module, we need to do
+    # some more steps to extract the file name of the compiled module
+    if caller == '<frozen importlib._bootstrap>':
+        if 'args' in frame.f_locals and len(frame.f_locals['args']) > 0:
+            caller = frame.f_locals['args'][0].__file__
+        else:
+            raise Exception('Cannot extract file name from caller. Please report this issue. In the meantime, you can use  when using ultraimport(..., caller=__file__)')
+
+    if caller == '<stdin>':
+        caller = f"{os.getcwd()}{os.sep}<stdin>"
+
+    if return_frame:
+        return caller, frame
+
+    del frame
+
+    return caller
+
+def create_ns_package(package_name, package_path, caller=None):
+    """
+    Create one or more dynamic namespace packages on the fly.
+
+    Parameters:
+        package_name (str): Name of the namespace package that should be created.
+
+        package_path (str): File system path of a directory that should be associated with the package.
+            You can use the special string `__dir__` to refer to the directory of the caller. If run from a Python
+            REPL, the current working directory will be used for `__dir__`.
+
+        caller (str): File system path to the file of the calling module. If you use advanced debugging tools
+            (or want to save some CPU cycles) you might want to set `caller=__file__`. Otherwise the caller
+            is derrived from the frame stack.
+    """
+
+    if '__dir__' in package_path:
+        if not caller:
+            caller = find_caller()
+        package_path = os.path.abspath(package_path.replace('__dir__', os.path.dirname(caller)))
+
+    loader = importlib._bootstrap_external._NamespaceLoader('loader', [package_path], None)
+    spec = importlib.util.spec_from_loader(package_name, loader)
+    package = importlib.util.module_from_spec(spec)
+    package.__path__ = loader._path
+    sys.modules[package_name] = package
+    return package
+
+def find_existing_module_by_path(file_path):
+    for name, module in sys.modules.items():
+        if module.__file__ == os.path.abspath(file_path):
+            return module
+
+    return None
+
+def check_file_is_importable(file_path, file_path_orig):
+    if not os.path.exists(file_path):
+        raise ResolveImportError('File does not exist.', file_path=file_path_orig, file_path_resolved=file_path)
+
+    if not os.path.isfile(file_path):
+        raise ResolveImportError('Object exists but is not a file.', file_path=file_path_orig, file_path_resolved=file_path)
+
+    if not os.access(file_path, os.R_OK):
+        raise ResolveImportError('File exists but no read access.', file_path=file_path_orig, file_path_resolved=file_path)
+
+    return True
 
 def reload(ns=None, add_to_ns=True):
     """ Reload ultraimport module """
