@@ -108,7 +108,7 @@ other_cherry = ultraimport('__dir__/../red/cherry.py')
 ```
 
 
-### 3) Import single object from module file
+### 3) Import single object
 
 Import the `Cherry` object from `cherry.py` and alias it to the name `my_class`. You could also provide a list of strings
 instead of a single string if you want to import multiple objects.
@@ -141,7 +141,7 @@ objs = ultraimport('__dir__/../cherry.py', '*')
 
 ### 6) Add imported objects to a namespace
 
-You can also provide any dict as a namespace.
+You can also provide any dict as a namespace. Common values are also `locals()` and `globals()`.
 
 ```python
 ultraimport('__dir__/../cherry.py', '*', add_to_ns=locals())
@@ -186,34 +186,37 @@ cherry = ultraimport('__dir__/../red/cherry.py', package='some.fruit')
 ```
 
 
-### Example 10:
-After creating the `fruit` namespace package as a side effect of the import,
-we can use it to do classical imports; remember the __path__ of `fruit` points to `red`,
-the parent directory of the cherry.py module we have imported.
+### 9) Integrate with normal imports
+
+After creating the `fruit` namespace package as a side effect of the import, you can use it to do classical imports.
+Remember that the `fruit` package points to the directory `red`.
+
 ```python
 from some.fruit.strawberry import Strawberry
 # <class 'some.fruit.strawberry.Strawberry'>
 ```
 
 
-### Example 11:
-You could also explicitly create a virtual namespace pointing to the directory 'yellow'
+### 10) Create virtual namespace package
+
+You could also explicitly create a virtual namespace pointing to the directory 'yellow'. Note that `__dir__` in the path below refers to the parent folder of the file that is executing the import. 
+
 ```python
 yellow_ns = ultraimport.create_ns_package('yellow', '__dir__/../yellow')
 # <module 'yellow' (<_frozen_importlib_external._NamespaceLoader object at 0x7fba8de36920>)>
 ```
 
-
-### Example 12:
 For further imports, the package_name `yellow` must be used as provided as the first argument.
+
 ```python
 from yellow import lemon
 # <module 'yellow.lemon' from '/home/ronny/Projects/py/ultraimport/examples/working/quickstart/yellow/lemon.py'>
 ```
 
+Let's add some other module `cherry.py` from a different directory to our virtual package. After
+you have added the module to the package, you can again use normal Python imports
+to access it.
 
-### Example 13:
-Let's add some other module from a different directory to our virtual package
 ```python
 ultraimport('__dir__/../red/cherry.py', package='yellow')
 from yellow.cherry import Cherry
