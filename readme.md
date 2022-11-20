@@ -11,7 +11,9 @@ Get control over your imports -- no matter how you run your code.
 [![Python >=3.8](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
 [![License](https://img.shields.io/github/license/ronny-rentner/ultraimport.svg)](https://github.com/ronny-rentner/UltraDict/blob/master/license.md)
 
-## Features
+## Overview
+
+### Features
 
 - Import any file from the file system as Python code:
     - Works independent of your `sys.path`
@@ -30,11 +32,11 @@ Get control over your imports -- no matter how you run your code.
 - Fix the error: `ValueError: attempted relative import beyond top-level package`
 - Better error messages
 
-**General Approach**
+### General Approach
 
 ultraimport is built around an own implementation of the [importlib.machinery.SourceFileLoader](https://docs.python.org/3/library/importlib.html#importlib.machinery.SourceFileLoader). This allows to take a different approach on finding code while still being compatible and integrate nicely with the normal Python import machinery. It also allows for some advanced use cases like virtual namespaces, pre-processing, lazy loading, dependency injection and last but not least much better error messages.
 
-**Is ultraimport supposed to replace the normal import statement?**
+### Is ultraimport supposed to replace the normal import statement?
 
 No! You will continue to use the builtin import statements to import 3rd party libraries which have been installed system wide. `ultraimport` is meant to import local files whose locations you control because they are located relatively to some other files.
 
@@ -86,51 +88,72 @@ Inside the `run.py` script, first we import ultraimport:
 import ultraimport
 ```
 
-### Example 1:
-Import the Python module `cherry.py` from the parent folder.
+### 1) Import from parent folder
+
+This example shows how to import the Python module `cherry.py` from the parent folder. Note that `__dir__` in the file path refers to the parent folder of the file that is executing the import. In this case, `run.py` is executing the import and it is located in a folder `run` and thus `__dir__` refers to the `run` folder.
+
 ```python
 cherry = ultraimport('__dir__/../cherry.py')
 # <module 'cherry' from '/home/ronny/Projects/py/ultraimport/examples/working/quickstart/cherry.py'>
 ```
-Note that `__dir__` in the file path above refers to the parent folder of the file that is executing the import. In this case, `run.py` is executing the import and it is located in a folder `run` and thus `__dir__` refers to the `run` folder.
 
-### Example 2:
-Import another Python module with the same name `cherry.py` from a sibling folder
+
+### 2) Import from sibling folder
+
+This exmaple show how to import another Python module from a sibling folder.
+
 ```python
 other_cherry = ultraimport('__dir__/../red/cherry.py')
 # <module 'cherry' from '/home/ronny/Projects/py/ultraimport/examples/working/quickstart/red/cherry.py'>
 ```
 
-### Example 3:
-Import the `Cherry` object from `cherry.py` and alias it to the name `my_class`
+
+### 3) Import single object from module file
+
+Import the `Cherry` object from `cherry.py` and alias it to the name `my_class`. You could also provide a list of strings
+instead of a single string if you want to import multiple objects.
+
 ```python
 my_class = ultraimport('__dir__/../red/cherry.py', 'Cherry')
 # <class 'cherry.Cherry'>
 ```
 
-### Example 4:
-We can make sure `my_class` is actually the type we expect, a class, and `my_string` is a string, otherwise a `TypeError` is thrown.
+
+### 4) Ensure type of imported object
+
+You can make sure `my_class` is actually the type you expect, a class, and `my_string` is a string, otherwise a `TypeError` is thrown.
+
 ```python
 my_class, my_string = ultraimport('__dir__/../cherry.py', { 'MyClass': type, 'some_string': str })
 # <class 'cherry.MyClass'>, "I am a string"
 ```
 
-### Example 5:
-Or import all objects
+
+### 5) Import all objects
+
+Using the known special string `'*'` allows to import all objects.
+
 ```python
 objs = ultraimport('__dir__/../cherry.py', '*')
 # <class 'cherry.MyClass'>
 ```
 
-### Example 6:
-Or add them to our local scope
+
+### 6) Add imported objects to a namespace
+
+You can also provide any dict as a namespace.
+
 ```python
 ultraimport('__dir__/../cherry.py', '*', add_to_ns=locals())
 # <class 'cherry.MyClass'>
 ```
 
-### Example 7:
-The next import would fail because the imported `banana.py` contains a relative import in line 1: `from .. import cherry as relatively_imported_cherry`.
+
+### 7) Give imported module a known parent package
+
+The next import would fail because the imported `banana.py` contains another
+relative import in line 1: `from .. import cherry as relatively_imported_cherry`.
+
 ```python
 try:
     banana = ultraimport('__dir__/../yellow/banana.py')
@@ -139,18 +162,24 @@ except Exception as e:
     pass
 ```
 
+If you would try to excute `banana.py` directly, you'd get the famous
+`ImportError: attempted relative import with no known parent package` error. To solve
+this error, just give the `banana.py` module a known parent package by using the `package` parameter.
+The relative import from above has two dots, so it means go two levels up. Thus we need to
+give our `banana.py` module at least two levels of parent packages by using `package=2`.
 
-### Example 8:
-There are two options to solve this: Put `banana.py` it in a virtual namespace package using the last 2 folder parts, in this case `quickstart.yellow` to make it work.
 ```python
 banana = ultraimport('__dir__/../yellow/banana.py', package=2)
 # <module 'quickstart.yellow.banana' from '/home/ronny/Projects/py/ultraimport/examples/working/quickstart/yellow/banana.py'>
 ```
-By the way, the other option is more advanced by using `recurse=True`: This would rewrite any relative imports in imported code dynamically to also use `ultraimport()`.
 
 
-### Example 9:
-Import `cherry.py` and put it in a virtual namespace package called `fruit`. The `fruit` package is created automatically if it does not exist and the `__path__` is set to the parent folder, in this case `red`.
+### 8) Embed module in a virtual namespace package
+
+You can also provide a string for the `package` parameter to define the name of the package. In this case
+we create a package called `fruit` pointing at the parent directory of `cherry.py`, the file that is being
+imported.
+
 ```python
 cherry = ultraimport('__dir__/../red/cherry.py', package='some.fruit')
 # <module 'some.fruit.cherry' from '/home/ronny/Projects/py/ultraimport/examples/working/quickstart/red/cherry.py'>
