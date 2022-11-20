@@ -1,8 +1,6 @@
 <!-- markdownlint-disable -->
 
-<a href="https://github.com/ronny-rentner/ultraimport/blob/main/ultraimport.py#L0"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
-
-# <kbd>module</kbd> `ultraimport`
+# `ultraimport` <kbd>module</kbd> <kbd>[:link: source](https://github.com/ronny-rentner/ultraimport/blob/main/ultraimport.py#L0)</kbd>
 
 ## Module Variables
 
@@ -11,11 +9,7 @@
  - **import_ongoing_stack**
  - **debug**
 
----
-
-<a href="https://github.com/ronny-rentner/ultraimport/blob/main/ultraimport.py#L58"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
-
-## <kbd>function</kbd> `ultraimport`
+## `ultraimport` <kbd>function</kbd> <kbd>[:link: source](https://github.com/ronny-rentner/ultraimport/blob/main/ultraimport.py#L58)</kbd>
 
 ```python
 ultraimport(
@@ -71,11 +65,7 @@ Import Python code files from the file system. This is the central main function
 
  - **`list`**:  If `objects_to_import` is a `List[str]`, return a list of imported objects from the imported module.
 
----
-
-<a href="https://github.com/ronny-rentner/ultraimport/blob/main/ultraimport.py#L866"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
-
-## <kbd>function</kbd> `get_module_name`
+## `get_module_name` <kbd>function</kbd> <kbd>[:link: source](https://github.com/ronny-rentner/ultraimport/blob/main/ultraimport.py#L866)</kbd>
 
 ```python
 get_module_name(file_path)
@@ -91,11 +81,7 @@ Return Python compatible module name from file_path. Replace dash and dot charac
 
  - **`module_name`** _(str)_:  Extracted and escaped name of the module
 
----
-
-<a href="https://github.com/ronny-rentner/ultraimport/blob/main/ultraimport.py#L887"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
-
-## <kbd>function</kbd> `get_package_name`
+## `get_package_name` <kbd>function</kbd> <kbd>[:link: source](https://github.com/ronny-rentner/ultraimport/blob/main/ultraimport.py#L887)</kbd>
 
 ```python
 get_package_name(file_path, package)
@@ -116,11 +102,7 @@ Generate necessary package hierarchy according to the `package` parameter andcre
  - **`package_path`** _(str)_:  Path to the package
  - **`package_module`** _(types.ModuleType)_:  Package module object
 
----
-
-<a href="https://github.com/ronny-rentner/ultraimport/blob/main/ultraimport.py#L922"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
-
-## <kbd>function</kbd> `find_caller`
+## `find_caller` <kbd>function</kbd> <kbd>[:link: source](https://github.com/ronny-rentner/ultraimport/blob/main/ultraimport.py#L922)</kbd>
 
 ```python
 find_caller(return_frame=False)
@@ -138,11 +120,7 @@ Find out who is calling by looking at the stack and searching for the first exte
  - **`str`**:  A string with the caller name
  - **`str, frame`**:  A string with the caller name, the stack frame that was used to extract the caller name
 
----
-
-<a href="https://github.com/ronny-rentner/ultraimport/blob/main/ultraimport.py#L968"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
-
-## <kbd>function</kbd> `create_ns_package`
+## `create_ns_package` <kbd>function</kbd> <kbd>[:link: source](https://github.com/ronny-rentner/ultraimport/blob/main/ultraimport.py#L968)</kbd>
 
 ```python
 create_ns_package(package_name, package_path, caller=None)
@@ -158,31 +136,19 @@ Create one or more dynamic namespace packages on the fly.
 
  - **`caller`** _(str)_:  File system path to the file of the calling module. If you use advanced debugging tools (or want to save some CPU cycles) you might want to set `caller=__file__`. Otherwise the caller is derrived from the frame stack.
 
----
-
-<a href="https://github.com/ronny-rentner/ultraimport/blob/main/ultraimport.py#L996"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
-
-## <kbd>function</kbd> `find_existing_module_by_path`
+## `find_existing_module_by_path` <kbd>function</kbd> <kbd>[:link: source](https://github.com/ronny-rentner/ultraimport/blob/main/ultraimport.py#L996)</kbd>
 
 ```python
 find_existing_module_by_path(file_path)
 ```
 
----
-
-<a href="https://github.com/ronny-rentner/ultraimport/blob/main/ultraimport.py#L1003"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
-
-## <kbd>function</kbd> `check_file_is_importable`
+## `check_file_is_importable` <kbd>function</kbd> <kbd>[:link: source](https://github.com/ronny-rentner/ultraimport/blob/main/ultraimport.py#L1003)</kbd>
 
 ```python
 check_file_is_importable(file_path, file_path_orig)
 ```
 
----
-
-<a href="https://github.com/ronny-rentner/ultraimport/blob/main/ultraimport.py#L1015"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
-
-## <kbd>function</kbd> `reload`
+## `reload` <kbd>function</kbd> <kbd>[:link: source](https://github.com/ronny-rentner/ultraimport/blob/main/ultraimport.py#L1015)</kbd>
 
 ```python
 reload(ns=None, add_to_ns=True)
@@ -190,55 +156,37 @@ reload(ns=None, add_to_ns=True)
 
 Reload ultraimport module
 
----
+--------------------------------
 
-<a href="https://github.com/ronny-rentner/ultraimport/blob/main/ultraimport.py"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
+## `CodeInfo` <kbd>class</kbd> <kbd>[:link: source](https://github.com/ronny-rentner/ultraimport/blob/main/ultraimport.py)</kbd>
 
-## <kbd>class</kbd> `CodeInfo`
 CodeInfo(source, file_path, line, offset)
 
----
+--------------------------------
 
-<a href="https://github.com/ronny-rentner/ultraimport/blob/main/ultraimport.py#L318"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
+## `ErrorRendererMixin` <kbd>class</kbd> <kbd>[:link: source](https://github.com/ronny-rentner/ultraimport/blob/main/ultraimport.py#L318)</kbd>
 
-## <kbd>class</kbd> `ErrorRendererMixin`
 Mixin for Exception classes with some helper functions, mainly for rendering data to console
 
----
-
-<a href="https://github.com/ronny-rentner/ultraimport/blob/main/ultraimport.py#L356"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
-
-### <kbd>method</kbd> `ErrorRendererMixin.find_frame`
+### `ErrorRendererMixin.find_frame` <kbd>method</kbd> <kbd>[:link: source](https://github.com/ronny-rentner/ultraimport/blob/main/ultraimport.py#L356)</kbd>
 
 ```python
 find_frame(frames, depth=1)
 ```
 
----
-
-<a href="https://github.com/ronny-rentner/ultraimport/blob/main/ultraimport.py#L342"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
-
-### <kbd>method</kbd> `ErrorRendererMixin.render_header`
+### `ErrorRendererMixin.render_header` <kbd>method</kbd> <kbd>[:link: source](https://github.com/ronny-rentner/ultraimport/blob/main/ultraimport.py#L342)</kbd>
 
 ```python
 render_header(headline, message)
 ```
 
----
-
-<a href="https://github.com/ronny-rentner/ultraimport/blob/main/ultraimport.py#L353"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
-
-### <kbd>method</kbd> `ErrorRendererMixin.render_suggestion`
+### `ErrorRendererMixin.render_suggestion` <kbd>method</kbd> <kbd>[:link: source](https://github.com/ronny-rentner/ultraimport/blob/main/ultraimport.py#L353)</kbd>
 
 ```python
 render_suggestion(line1, line2)
 ```
 
----
-
-<a href="https://github.com/ronny-rentner/ultraimport/blob/main/ultraimport.py#L321"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
-
-### <kbd>method</kbd> `ErrorRendererMixin.render_table`
+### `ErrorRendererMixin.render_table` <kbd>method</kbd> <kbd>[:link: source](https://github.com/ronny-rentner/ultraimport/blob/main/ultraimport.py#L321)</kbd>
 
 ```python
 render_table(data)
@@ -248,65 +196,41 @@ Render a table for error output on console output.
 
 The tables are meant to always have to columns with labels in the firstcolumn and values in the second column.
 
----
+--------------------------------
 
-<a href="https://github.com/ronny-rentner/ultraimport/blob/main/ultraimport.py#L367"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
+## `RewrittenImportError` <kbd>class</kbd> <kbd>[:link: source](https://github.com/ronny-rentner/ultraimport/blob/main/ultraimport.py#L367)</kbd>
 
-## <kbd>class</kbd> `RewrittenImportError`
-
-<a href="https://github.com/ronny-rentner/ultraimport/blob/main/ultraimport.py#L368"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
-
-### <kbd>method</kbd> `RewrittenImportError.__init__`
+### `RewrittenImportError.__init__` <kbd>method</kbd> <kbd>[:link: source](https://github.com/ronny-rentner/ultraimport/blob/main/ultraimport.py#L368)</kbd>
 
 ```python
 __init__(message='', combine=None, code_info=None, object_to_import=None, *args)
 ```
 
----
-
-<a href="https://github.com/ronny-rentner/ultraimport/blob/main/ultraimport.py#L409"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
-
-### <kbd>method</kbd> `RewrittenImportError.find_cause`
+### `RewrittenImportError.find_cause` <kbd>method</kbd> <kbd>[:link: source](https://github.com/ronny-rentner/ultraimport/blob/main/ultraimport.py#L409)</kbd>
 
 ```python
 find_cause(tb=None, depth=0)
 ```
 
----
-
-<a href="https://github.com/ronny-rentner/ultraimport/blob/main/ultraimport.py#L356"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
-
-### <kbd>method</kbd> `RewrittenImportError.find_frame`
+### `RewrittenImportError.find_frame` <kbd>method</kbd> <kbd>[:link: source](https://github.com/ronny-rentner/ultraimport/blob/main/ultraimport.py#L356)</kbd>
 
 ```python
 find_frame(frames, depth=1)
 ```
 
----
-
-<a href="https://github.com/ronny-rentner/ultraimport/blob/main/ultraimport.py#L342"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
-
-### <kbd>method</kbd> `RewrittenImportError.render_header`
+### `RewrittenImportError.render_header` <kbd>method</kbd> <kbd>[:link: source](https://github.com/ronny-rentner/ultraimport/blob/main/ultraimport.py#L342)</kbd>
 
 ```python
 render_header(headline, message)
 ```
 
----
-
-<a href="https://github.com/ronny-rentner/ultraimport/blob/main/ultraimport.py#L353"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
-
-### <kbd>method</kbd> `RewrittenImportError.render_suggestion`
+### `RewrittenImportError.render_suggestion` <kbd>method</kbd> <kbd>[:link: source](https://github.com/ronny-rentner/ultraimport/blob/main/ultraimport.py#L353)</kbd>
 
 ```python
 render_suggestion(line1, line2)
 ```
 
----
-
-<a href="https://github.com/ronny-rentner/ultraimport/blob/main/ultraimport.py#L321"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
-
-### <kbd>method</kbd> `RewrittenImportError.render_table`
+### `RewrittenImportError.render_table` <kbd>method</kbd> <kbd>[:link: source](https://github.com/ronny-rentner/ultraimport/blob/main/ultraimport.py#L321)</kbd>
 
 ```python
 render_table(data)
@@ -316,55 +240,35 @@ Render a table for error output on console output.
 
 The tables are meant to always have to columns with labels in the firstcolumn and values in the second column.
 
----
+--------------------------------
 
-<a href="https://github.com/ronny-rentner/ultraimport/blob/main/ultraimport.py#L421"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
+## `CircularImportError` <kbd>class</kbd> <kbd>[:link: source](https://github.com/ronny-rentner/ultraimport/blob/main/ultraimport.py#L421)</kbd>
 
-## <kbd>class</kbd> `CircularImportError`
-
-<a href="https://github.com/ronny-rentner/ultraimport/blob/main/ultraimport.py#L422"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
-
-### <kbd>method</kbd> `CircularImportError.__init__`
+### `CircularImportError.__init__` <kbd>method</kbd> <kbd>[:link: source](https://github.com/ronny-rentner/ultraimport/blob/main/ultraimport.py#L422)</kbd>
 
 ```python
 __init__(message=None, file_path=None, file_path_resolved=None, *args)
 ```
 
----
-
-<a href="https://github.com/ronny-rentner/ultraimport/blob/main/ultraimport.py#L356"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
-
-### <kbd>method</kbd> `CircularImportError.find_frame`
+### `CircularImportError.find_frame` <kbd>method</kbd> <kbd>[:link: source](https://github.com/ronny-rentner/ultraimport/blob/main/ultraimport.py#L356)</kbd>
 
 ```python
 find_frame(frames, depth=1)
 ```
 
----
-
-<a href="https://github.com/ronny-rentner/ultraimport/blob/main/ultraimport.py#L342"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
-
-### <kbd>method</kbd> `CircularImportError.render_header`
+### `CircularImportError.render_header` <kbd>method</kbd> <kbd>[:link: source](https://github.com/ronny-rentner/ultraimport/blob/main/ultraimport.py#L342)</kbd>
 
 ```python
 render_header(headline, message)
 ```
 
----
-
-<a href="https://github.com/ronny-rentner/ultraimport/blob/main/ultraimport.py#L353"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
-
-### <kbd>method</kbd> `CircularImportError.render_suggestion`
+### `CircularImportError.render_suggestion` <kbd>method</kbd> <kbd>[:link: source](https://github.com/ronny-rentner/ultraimport/blob/main/ultraimport.py#L353)</kbd>
 
 ```python
 render_suggestion(line1, line2)
 ```
 
----
-
-<a href="https://github.com/ronny-rentner/ultraimport/blob/main/ultraimport.py#L321"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
-
-### <kbd>method</kbd> `CircularImportError.render_table`
+### `CircularImportError.render_table` <kbd>method</kbd> <kbd>[:link: source](https://github.com/ronny-rentner/ultraimport/blob/main/ultraimport.py#L321)</kbd>
 
 ```python
 render_table(data)
@@ -374,15 +278,11 @@ Render a table for error output on console output.
 
 The tables are meant to always have to columns with labels in the firstcolumn and values in the second column.
 
----
+--------------------------------
 
-<a href="https://github.com/ronny-rentner/ultraimport/blob/main/ultraimport.py#L450"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
+## `ExecuteImportError` <kbd>class</kbd> <kbd>[:link: source](https://github.com/ronny-rentner/ultraimport/blob/main/ultraimport.py#L450)</kbd>
 
-## <kbd>class</kbd> `ExecuteImportError`
-
-<a href="https://github.com/ronny-rentner/ultraimport/blob/main/ultraimport.py#L451"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
-
-### <kbd>method</kbd> `ExecuteImportError.__init__`
+### `ExecuteImportError.__init__` <kbd>method</kbd> <kbd>[:link: source](https://github.com/ronny-rentner/ultraimport/blob/main/ultraimport.py#L451)</kbd>
 
 ```python
 __init__(
@@ -395,41 +295,25 @@ __init__(
 )
 ```
 
----
-
-<a href="https://github.com/ronny-rentner/ultraimport/blob/main/ultraimport.py#L356"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
-
-### <kbd>method</kbd> `ExecuteImportError.find_frame`
+### `ExecuteImportError.find_frame` <kbd>method</kbd> <kbd>[:link: source](https://github.com/ronny-rentner/ultraimport/blob/main/ultraimport.py#L356)</kbd>
 
 ```python
 find_frame(frames, depth=1)
 ```
 
----
-
-<a href="https://github.com/ronny-rentner/ultraimport/blob/main/ultraimport.py#L342"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
-
-### <kbd>method</kbd> `ExecuteImportError.render_header`
+### `ExecuteImportError.render_header` <kbd>method</kbd> <kbd>[:link: source](https://github.com/ronny-rentner/ultraimport/blob/main/ultraimport.py#L342)</kbd>
 
 ```python
 render_header(headline, message)
 ```
 
----
-
-<a href="https://github.com/ronny-rentner/ultraimport/blob/main/ultraimport.py#L353"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
-
-### <kbd>method</kbd> `ExecuteImportError.render_suggestion`
+### `ExecuteImportError.render_suggestion` <kbd>method</kbd> <kbd>[:link: source](https://github.com/ronny-rentner/ultraimport/blob/main/ultraimport.py#L353)</kbd>
 
 ```python
 render_suggestion(line1, line2)
 ```
 
----
-
-<a href="https://github.com/ronny-rentner/ultraimport/blob/main/ultraimport.py#L321"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
-
-### <kbd>method</kbd> `ExecuteImportError.render_table`
+### `ExecuteImportError.render_table` <kbd>method</kbd> <kbd>[:link: source](https://github.com/ronny-rentner/ultraimport/blob/main/ultraimport.py#L321)</kbd>
 
 ```python
 render_table(data)
@@ -439,15 +323,11 @@ Render a table for error output on console output.
 
 The tables are meant to always have to columns with labels in the firstcolumn and values in the second column.
 
----
+--------------------------------
 
-<a href="https://github.com/ronny-rentner/ultraimport/blob/main/ultraimport.py#L487"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
+## `ResolveImportError` <kbd>class</kbd> <kbd>[:link: source](https://github.com/ronny-rentner/ultraimport/blob/main/ultraimport.py#L487)</kbd>
 
-## <kbd>class</kbd> `ResolveImportError`
-
-<a href="https://github.com/ronny-rentner/ultraimport/blob/main/ultraimport.py#L488"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
-
-### <kbd>method</kbd> `ResolveImportError.__init__`
+### `ResolveImportError.__init__` <kbd>method</kbd> <kbd>[:link: source](https://github.com/ronny-rentner/ultraimport/blob/main/ultraimport.py#L488)</kbd>
 
 ```python
 __init__(
@@ -459,41 +339,25 @@ __init__(
 )
 ```
 
----
-
-<a href="https://github.com/ronny-rentner/ultraimport/blob/main/ultraimport.py#L356"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
-
-### <kbd>method</kbd> `ResolveImportError.find_frame`
+### `ResolveImportError.find_frame` <kbd>method</kbd> <kbd>[:link: source](https://github.com/ronny-rentner/ultraimport/blob/main/ultraimport.py#L356)</kbd>
 
 ```python
 find_frame(frames, depth=1)
 ```
 
----
-
-<a href="https://github.com/ronny-rentner/ultraimport/blob/main/ultraimport.py#L342"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
-
-### <kbd>method</kbd> `ResolveImportError.render_header`
+### `ResolveImportError.render_header` <kbd>method</kbd> <kbd>[:link: source](https://github.com/ronny-rentner/ultraimport/blob/main/ultraimport.py#L342)</kbd>
 
 ```python
 render_header(headline, message)
 ```
 
----
-
-<a href="https://github.com/ronny-rentner/ultraimport/blob/main/ultraimport.py#L353"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
-
-### <kbd>method</kbd> `ResolveImportError.render_suggestion`
+### `ResolveImportError.render_suggestion` <kbd>method</kbd> <kbd>[:link: source](https://github.com/ronny-rentner/ultraimport/blob/main/ultraimport.py#L353)</kbd>
 
 ```python
 render_suggestion(line1, line2)
 ```
 
----
-
-<a href="https://github.com/ronny-rentner/ultraimport/blob/main/ultraimport.py#L321"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
-
-### <kbd>method</kbd> `ResolveImportError.render_table`
+### `ResolveImportError.render_table` <kbd>method</kbd> <kbd>[:link: source](https://github.com/ronny-rentner/ultraimport/blob/main/ultraimport.py#L321)</kbd>
 
 ```python
 render_table(data)
@@ -503,66 +367,53 @@ Render a table for error output on console output.
 
 The tables are meant to always have to columns with labels in the firstcolumn and values in the second column.
 
----
+--------------------------------
 
-<a href="https://github.com/ronny-rentner/ultraimport/blob/main/ultraimport.py#L526"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
+## `LazyCass` <kbd>class</kbd> <kbd>[:link: source](https://github.com/ronny-rentner/ultraimport/blob/main/ultraimport.py#L526)</kbd>
 
-## <kbd>class</kbd> `LazyCass`
 Lazily-loaded class that triggers module loading on access
 
----
+--------------------------------
 
-<a href="https://github.com/ronny-rentner/ultraimport/blob/main/ultraimport.py#L532"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
+## `LazyCallable` <kbd>class</kbd> <kbd>[:link: source](https://github.com/ronny-rentner/ultraimport/blob/main/ultraimport.py#L532)</kbd>
 
-## <kbd>class</kbd> `LazyCallable`
 Lazily-loaded callable that triggers module loading on access
 
-<a href="https://github.com/ronny-rentner/ultraimport/blob/main/ultraimport.py#L534"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
-
-### <kbd>method</kbd> `LazyCallable.__init__`
+### `LazyCallable.__init__` <kbd>method</kbd> <kbd>[:link: source](https://github.com/ronny-rentner/ultraimport/blob/main/ultraimport.py#L534)</kbd>
 
 ```python
 __init__(importer, callable_name)
 ```
 
----
+--------------------------------
 
-<a href="https://github.com/ronny-rentner/ultraimport/blob/main/ultraimport.py#L545"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
+## `LazyModule` <kbd>class</kbd> <kbd>[:link: source](https://github.com/ronny-rentner/ultraimport/blob/main/ultraimport.py#L545)</kbd>
 
-## <kbd>class</kbd> `LazyModule`
 Lazily-loaded module that triggers loading on attribute access
 
-<a href="https://github.com/ronny-rentner/ultraimport/blob/main/ultraimport.py#L548"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
-
-### <kbd>method</kbd> `LazyModule.__init__`
+### `LazyModule.__init__` <kbd>method</kbd> <kbd>[:link: source](https://github.com/ronny-rentner/ultraimport/blob/main/ultraimport.py#L548)</kbd>
 
 ```python
 __init__(name, file_path, importer)
 ```
 
----
+--------------------------------
 
-<a href="https://github.com/ronny-rentner/ultraimport/blob/main/ultraimport.py#L563"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
+## `Loader` <kbd>class</kbd> <kbd>[:link: source](https://github.com/ronny-rentner/ultraimport/blob/main/ultraimport.py#L563)</kbd>
 
-## <kbd>class</kbd> `Loader`
 Loader factory that returns either SourceFileLoader or ExtensionFileLoader depending on file_path
 
----
+--------------------------------
 
-<a href="https://github.com/ronny-rentner/ultraimport/blob/main/ultraimport.py#L573"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
+## `ExtensionFileLoader` <kbd>class</kbd> <kbd>[:link: source](https://github.com/ronny-rentner/ultraimport/blob/main/ultraimport.py#L573)</kbd>
 
-## <kbd>class</kbd> `ExtensionFileLoader`
+--------------------------------
 
----
+## `SourceFileLoader` <kbd>class</kbd> <kbd>[:link: source](https://github.com/ronny-rentner/ultraimport/blob/main/ultraimport.py#L576)</kbd>
 
-<a href="https://github.com/ronny-rentner/ultraimport/blob/main/ultraimport.py#L576"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
-
-## <kbd>class</kbd> `SourceFileLoader`
 Preprocessing Python source file loader
 
-<a href="https://github.com/ronny-rentner/ultraimport/blob/main/ultraimport.py#L579"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
-
-### <kbd>method</kbd> `SourceFileLoader.__init__`
+### `SourceFileLoader.__init__` <kbd>method</kbd> <kbd>[:link: source](https://github.com/ronny-rentner/ultraimport/blob/main/ultraimport.py#L579)</kbd>
 
 ```python
 __init__(
@@ -574,210 +425,130 @@ __init__(
 )
 ```
 
----
-
-<a href="https://github.com/ronny-rentner/ultraimport/blob/main/ultraimport.py#L588"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
-
-### <kbd>method</kbd> `SourceFileLoader.check_preprocess`
+### `SourceFileLoader.check_preprocess` <kbd>method</kbd> <kbd>[:link: source](https://github.com/ronny-rentner/ultraimport/blob/main/ultraimport.py#L588)</kbd>
 
 ```python
 check_preprocess(file_path)
 ```
 
----
-
-<a href="https://github.com/ronny-rentner/ultraimport/blob/main/ultraimport.py#L617"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
-
-### <kbd>method</kbd> `SourceFileLoader.ensure_dir`
+### `SourceFileLoader.ensure_dir` <kbd>method</kbd> <kbd>[:link: source](https://github.com/ronny-rentner/ultraimport/blob/main/ultraimport.py#L617)</kbd>
 
 ```python
 ensure_dir(path)
 ```
 
----
-
-<a href="https://github.com/ronny-rentner/ultraimport/blob/main/ultraimport.py#L658"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
-
-### <kbd>method</kbd> `SourceFileLoader.get_data`
+### `SourceFileLoader.get_data` <kbd>method</kbd> <kbd>[:link: source](https://github.com/ronny-rentner/ultraimport/blob/main/ultraimport.py#L658)</kbd>
 
 ```python
 get_data(path, direct=False)
 ```
 
----
-
-<a href="https://github.com/ronny-rentner/ultraimport/blob/main/ultraimport.py#L675"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
-
-### <kbd>method</kbd> `SourceFileLoader.get_filename`
+### `SourceFileLoader.get_filename` <kbd>method</kbd> <kbd>[:link: source](https://github.com/ronny-rentner/ultraimport/blob/main/ultraimport.py#L675)</kbd>
 
 ```python
 get_filename(fullname)
 ```
 
----
-
-<a href="https://github.com/ronny-rentner/ultraimport/blob/main/ultraimport.py#L641"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
-
-### <kbd>method</kbd> `SourceFileLoader.is_bytecode`
+### `SourceFileLoader.is_bytecode` <kbd>method</kbd> <kbd>[:link: source](https://github.com/ronny-rentner/ultraimport/blob/main/ultraimport.py#L641)</kbd>
 
 ```python
 is_bytecode(file_path)
 ```
 
----
-
-<a href="https://github.com/ronny-rentner/ultraimport/blob/main/ultraimport.py#L644"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
-
-### <kbd>method</kbd> `SourceFileLoader.path_stats`
+### `SourceFileLoader.path_stats` <kbd>method</kbd> <kbd>[:link: source](https://github.com/ronny-rentner/ultraimport/blob/main/ultraimport.py#L644)</kbd>
 
 ```python
 path_stats(path)
 ```
 
----
-
-<a href="https://github.com/ronny-rentner/ultraimport/blob/main/ultraimport.py#L622"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
-
-### <kbd>method</kbd> `SourceFileLoader.preprocess`
+### `SourceFileLoader.preprocess` <kbd>method</kbd> <kbd>[:link: source](https://github.com/ronny-rentner/ultraimport/blob/main/ultraimport.py#L622)</kbd>
 
 ```python
 preprocess(file_path)
 ```
 
----
+--------------------------------
 
-<a href="https://github.com/ronny-rentner/ultraimport/blob/main/ultraimport.py#L684"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
+## `RewriteImport` <kbd>class</kbd> <kbd>[:link: source](https://github.com/ronny-rentner/ultraimport/blob/main/ultraimport.py#L684)</kbd>
 
-## <kbd>class</kbd> `RewriteImport`
-
-<a href="https://github.com/ronny-rentner/ultraimport/blob/main/ultraimport.py#L686"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
-
-### <kbd>method</kbd> `RewriteImport.__init__`
+### `RewriteImport.__init__` <kbd>method</kbd> <kbd>[:link: source](https://github.com/ronny-rentner/ultraimport/blob/main/ultraimport.py#L686)</kbd>
 
 ```python
 __init__(file_path=None, *args)
 ```
 
----
-
-<a href="https://github.com/ronny-rentner/ultraimport/blob/main/ultraimport.py#L807"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
-
-### <kbd>method</kbd> `RewriteImport.gen_aliasses_tuple`
+### `RewriteImport.gen_aliasses_tuple` <kbd>method</kbd> <kbd>[:link: source](https://github.com/ronny-rentner/ultraimport/blob/main/ultraimport.py#L807)</kbd>
 
 ```python
 gen_aliasses_tuple(aliasses)
 ```
 
----
-
-<a href="https://github.com/ronny-rentner/ultraimport/blob/main/ultraimport.py#L729"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
-
-### <kbd>method</kbd> `RewriteImport.gen_assign`
+### `RewriteImport.gen_assign` <kbd>method</kbd> <kbd>[:link: source](https://github.com/ronny-rentner/ultraimport/blob/main/ultraimport.py#L729)</kbd>
 
 ```python
 gen_assign(targets, value)
 ```
 
----
-
-<a href="https://github.com/ronny-rentner/ultraimport/blob/main/ultraimport.py#L740"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
-
-### <kbd>method</kbd> `RewriteImport.gen_call`
+### `RewriteImport.gen_call` <kbd>method</kbd> <kbd>[:link: source](https://github.com/ronny-rentner/ultraimport/blob/main/ultraimport.py#L740)</kbd>
 
 ```python
 gen_call(name, args=[], keywords=[])
 ```
 
----
-
-<a href="https://github.com/ronny-rentner/ultraimport/blob/main/ultraimport.py#L762"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
-
-### <kbd>method</kbd> `RewriteImport.gen_code_info`
+### `RewriteImport.gen_code_info` <kbd>method</kbd> <kbd>[:link: source](https://github.com/ronny-rentner/ultraimport/blob/main/ultraimport.py#L762)</kbd>
 
 ```python
 gen_code_info(source, file_path, line, offset)
 ```
 
----
-
-<a href="https://github.com/ronny-rentner/ultraimport/blob/main/ultraimport.py#L794"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
-
-### <kbd>method</kbd> `RewriteImport.gen_import`
+### `RewriteImport.gen_import` <kbd>method</kbd> <kbd>[:link: source](https://github.com/ronny-rentner/ultraimport/blob/main/ultraimport.py#L794)</kbd>
 
 ```python
 gen_import(alias, module_path, object_name=None)
 ```
 
----
-
-<a href="https://github.com/ronny-rentner/ultraimport/blob/main/ultraimport.py#L743"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
-
-### <kbd>method</kbd> `RewriteImport.gen_import_call`
+### `RewriteImport.gen_import_call` <kbd>method</kbd> <kbd>[:link: source](https://github.com/ronny-rentner/ultraimport/blob/main/ultraimport.py#L743)</kbd>
 
 ```python
 gen_import_call(file_path, import_elts=None)
 ```
 
----
-
-<a href="https://github.com/ronny-rentner/ultraimport/blob/main/ultraimport.py#L735"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
-
-### <kbd>method</kbd> `RewriteImport.gen_keyword`
+### `RewriteImport.gen_keyword` <kbd>method</kbd> <kbd>[:link: source](https://github.com/ronny-rentner/ultraimport/blob/main/ultraimport.py#L735)</kbd>
 
 ```python
 gen_keyword(name, value)
 ```
 
----
-
-<a href="https://github.com/ronny-rentner/ultraimport/blob/main/ultraimport.py#L810"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
-
-### <kbd>method</kbd> `RewriteImport.gen_objects_tuple`
+### `RewriteImport.gen_objects_tuple` <kbd>method</kbd> <kbd>[:link: source](https://github.com/ronny-rentner/ultraimport/blob/main/ultraimport.py#L810)</kbd>
 
 ```python
 gen_objects_tuple(object_names)
 ```
 
----
-
-<a href="https://github.com/ronny-rentner/ultraimport/blob/main/ultraimport.py#L772"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
-
-### <kbd>method</kbd> `RewriteImport.gen_raise`
+### `RewriteImport.gen_raise` <kbd>method</kbd> <kbd>[:link: source](https://github.com/ronny-rentner/ultraimport/blob/main/ultraimport.py#L772)</kbd>
 
 ```python
 gen_raise(alias, code_info, combine, object_to_import)
 ```
 
----
-
-<a href="https://github.com/ronny-rentner/ultraimport/blob/main/ultraimport.py#L713"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
-
-### <kbd>method</kbd> `RewriteImport.gen_try`
+### `RewriteImport.gen_try` <kbd>method</kbd> <kbd>[:link: source](https://github.com/ronny-rentner/ultraimport/blob/main/ultraimport.py#L713)</kbd>
 
 ```python
 gen_try(
     try_body,
-    except_body=<ast.Pass object at 0x7fe0c7451930>,
+    except_body=<ast.Pass object at 0x7ffaf6ac8820>,
     except_alias='e',
     except_error='ultraimport.ResolveImportError'
 )
 ```
 
----
-
-<a href="https://github.com/ronny-rentner/ultraimport/blob/main/ultraimport.py#L690"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
-
-### <kbd>classmethod</kbd> `RewriteImport.transform_imports`
+### `RewriteImport.transform_imports` <kbd>classmethod</kbd> <kbd>[:link: source](https://github.com/ronny-rentner/ultraimport/blob/main/ultraimport.py#L690)</kbd>
 
 ```python
 transform_imports(source, file_path=None, use_cache=True)
 ```
 
----
-
-<a href="https://github.com/ronny-rentner/ultraimport/blob/main/ultraimport.py#L815"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
-
-### <kbd>method</kbd> `RewriteImport.visit_ImportFrom`
+### `RewriteImport.visit_ImportFrom` <kbd>method</kbd> <kbd>[:link: source](https://github.com/ronny-rentner/ultraimport/blob/main/ultraimport.py#L815)</kbd>
 
 ```python
 visit_ImportFrom(node)
@@ -785,10 +556,9 @@ visit_ImportFrom(node)
 
 Rewrite all `import .. from` statements
 
----
+--------------------------------
 
-<a href="https://github.com/ronny-rentner/ultraimport/blob/main/ultraimport.py#L1024"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square" /></a>
+## `CallableModule` <kbd>class</kbd> <kbd>[:link: source](https://github.com/ronny-rentner/ultraimport/blob/main/ultraimport.py#L1024)</kbd>
 
-## <kbd>class</kbd> `CallableModule`
 Makes ultraimport directly callable after doing `import ultraimport`
 
