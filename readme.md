@@ -4,7 +4,7 @@ Get control over your imports -- no matter how you run your code.
 
 **Warning: This is an early hack. There are only few unit tests, yet. Maybe not stable!**
 
-[Features](#features) | [Installation](#installation) | [Quickstart](#quickstart) | [Documentation](#documentation)
+[Overview](#overview) | [Installation](#installation) | [Quickstart](#quickstart) | [Documentation](#documentation)
 
 [![PyPI Package](https://img.shields.io/pypi/v/ultradict.svg)](https://pypi.org/project/ultraimport)
 [![Run Tests](https://github.com/ronny-rentner/ultraimport/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/ronny-rentner/ultraimport/actions/workflows/ci.yml)
@@ -199,7 +199,7 @@ from some.fruit.strawberry import Strawberry
 
 ### 10) Create virtual namespace package
 
-You could also explicitly create a virtual namespace pointing to the directory 'yellow'. Note that `__dir__` in the path below refers to the parent folder of the file that is executing the import. 
+You could also explicitly create a virtual namespace pointing to the directory `'yellow'`. Note that `__dir__` in the path below refers to the parent folder of the file that is executing the import.
 
 ```python
 yellow_ns = ultraimport.create_ns_package('yellow', '__dir__/../yellow')
@@ -228,6 +228,10 @@ from yellow.cherry import Cherry
 
 The full documentation can be find in the [docs/](docs/) folder.
 
+Here is the interface of the main function:
+
+__ULTRAIMPORT_DOCS__
+
 ### Advanced Usage
 
 See [docs/advanced-usage.md](/docs/advanced-usage.md)
@@ -236,11 +240,13 @@ See [docs/advanced-usage.md](/docs/advanced-usage.md)
 
 See [docs/better-error-messages.md](/docs/better-error-messages.md)
 
-## Contributing
+### Contributing
 
 We love contributions!
 
 ultraimport is open source, built on open source, and we'd love to have you hang out in our community.
+
+
 
 ## The Issue: Broken Relative Imports in Python
 
@@ -360,11 +366,10 @@ python ./run.py
 ~/myprogram/run.py
 ```
 
-## Python Relative Import Limitations
+### Python Relative Import Limitations
 
+> https://peps.python.org/pep-0328/#relative-imports-and-name
 > Relative imports use a module's __name__ attribute to determine that module's position in the package hierarchy.
 > If the module's name does not contain any package information (e.g. it is set to '__main__') then relative imports
 > are resolved as if the module were a top level module, regardless of where the module is actually located on the file system.
-
-https://peps.python.org/pep-0328/#relative-imports-and-name
 
