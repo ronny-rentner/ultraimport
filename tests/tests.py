@@ -87,6 +87,22 @@ class ultraimportTests(unittest.TestCase):
         caller = ultraimport.find_caller()
         self.assertEqual(caller, __file__)
 
+    def test_create_namespace(self):
+        import tempfile, os
+        tmp_dir = tempfile.TemporaryDirectory()
+        package_dir = os.path.join(tmp_dir.name, 'one', 'two')
+        os.makedirs(package_dir)
+        ns = ultraimport.create_ns_package('test_ns_package_one.test_ns_package_two', package_dir)
+        self.assertEqual(
+            sys.modules['test_ns_package_one'].__path__._path,
+            [ os.path.join(tmp_dir.name, 'one') ],
+            f"Namespace package has unexpected path: {sys.modules['test_ns_package_one'].__path__}")
+        self.assertEqual(
+            sys.modules['test_ns_package_one.test_ns_package_two'].__path__._path,
+            [ package_dir ],
+            f"Namespace package has unexpected path: {sys.modules['test_ns_package_one.test_ns_package_two'].__path__}")
+        tmp_dir.cleanup()
+
     @unittest.skipUnless(sys.version_info >= (3, 9), "requires Python >= 3.9")
     def test_example_mypackage(self):
         file_path = "examples/working/mypackage/run.py"

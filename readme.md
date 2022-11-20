@@ -141,10 +141,11 @@ objs = ultraimport('__dir__/../cherry.py', '*')
 
 ### 6) Add imported objects to a namespace
 
-You can also provide any dict as a namespace. Common values are also `locals()` and `globals()`.
+You can also provide any dict as a namespace. A common value to use is `globals()`. If you set `add_to_ns=True`,
+the imported objects are added to the local scope of the caller.
 
 ```python
-ultraimport('__dir__/../cherry.py', '*', add_to_ns=locals())
+ultraimport('__dir__/../cherry.py', '*', add_to_ns=globals())
 # <class 'cherry.MyClass'>
 ```
 
