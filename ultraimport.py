@@ -986,6 +986,11 @@ def create_ns_package(package_name, package_path, caller=None):
             caller = find_caller()
         package_path = os.path.abspath(package_path.replace('__dir__', os.path.dirname(caller)))
 
+    rest, dot, name = package_name.rpartition('.')
+    # Make sure to create parent package first
+    if rest:
+        create_ns_package(rest, os.path.dirname(package_path), caller=caller)
+
     loader = importlib._bootstrap_external._NamespaceLoader('loader', [package_path], None)
     spec = importlib.util.spec_from_loader(package_name, loader)
     package = importlib.util.module_from_spec(spec)
