@@ -40,7 +40,7 @@ ultraimport is built around an own implementation of the [importlib.machinery.So
 
 No! You will continue to use the builtin import statements to import 3rd party libraries which have been installed system wide. `ultraimport` is meant to import local files whose locations you control because they are located relatively to some other files.
 
-**Issues**
+### Issues
 
 Currently, there is no integration with any Python language server for code completion in your IDE.
 
@@ -227,11 +227,9 @@ from yellow.cherry import Cherry
 
 ## Documentation
 
-The full documentation can be find in the [docs/](docs/) folder.
+The full interface documentation can be find in the [docs/](/docs/) folder.
 
-Here is the interface of the main function:
-
-__ULTRAIMPORT_DOCS__
+Here is the interface of the main function: [ultraimport](/docs/ultraimport.md#function-ultraimport)
 
 ### Advanced Usage
 
