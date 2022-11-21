@@ -45,7 +45,7 @@ class ultraimportTests(unittest.TestCase):
 
     def test_syntax_error(self):
         with self.assertRaises(NameError):
-            ultraimport('__dir__/../examples/broken/syntax_error.py')
+            ultraimport('__dir__/cases/syntax_error.py')
 
     def test_recurse_preprocessor_cache_path_prefix(self):
         with tempfile.TemporaryDirectory() as tmp_dir:

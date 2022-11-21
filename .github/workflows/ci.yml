@@ -63,8 +63,30 @@ jobs:
             os: ubuntu-20.04
             arch: s390x
             platform: s390x
+
+          - name: "linux-i386"
+            os: ubuntu-22.04
+            arch: i686
+            platform: i386
+          - name: "linux-x86_64"
+            os: ubuntu-22.04
+            arch: x86_64
+            platform: x86_64
+          - name: "linux-aarch64"
+            os: ubuntu-22.04
+            arch: aarch64
+            platform: aarch64
+          - name: "linux-ppc64le"
+            os: ubuntu-22.04
+            arch: ppc64le
+            platform: ppc64le
+          - name: "linux-s390x"
+            os: ubuntu-22.04
+            arch: s390x
+            platform: s390x
+
         # Run in all these versions of Python
-        python-version: ["3.7", "3.8", "3.9", "3.10"]
+        python-version: ["3.7", "3.8", "3.9", "3.10", "3.11"]
     steps:
       - uses: actions/checkout@v3
       - name: Install Python ${{ matrix.python-version }}

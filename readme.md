@@ -42,7 +42,7 @@ No! You will continue to use the builtin import statements to import 3rd party l
 
 ### Issues
 
-Currently, there is no integration with any Python language server for code completion in your IDE.
+Currently, there is no integration with any Python language server for code completion in your IDE. Code completion in the Python REPL works as expected.
 
 
 ## Installation
@@ -80,7 +80,7 @@ quickstart
 The entry point is the script [run.py](/examples/working/quickstart/run/run.py) located in the [quickstart/run](/examples/working/quickstart/run/) folder.
 If you want, you can directly execute the example script by running:
 ```bash
-python /path/to/quickstart/run/run.py`
+python /path/to/quickstart/run/run.py
 ```
 
 Inside the `run.py` script, first we import ultraimport:
