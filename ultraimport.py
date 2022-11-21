@@ -55,7 +55,8 @@ import_ongoing_stack = {}
 debug = False
 #debug = True
 
-def ultraimport(file_path, objects_to_import=None, add_to_ns=None, preprocessor=None, package=None, caller=None, use_cache=True, lazy=False, recurse=False, inject=None, use_preprocessor_cache=True, cache_path_prefix=None):
+def ultraimport(file_path, objects_to_import=None, add_to_ns=None, preprocessor=None, package=None, caller=None, caller_reference=None,
+                use_cache=True, lazy=False, recurse=False, inject=None, use_preprocessor_cache=True, cache_path_prefix=None):
     """
     Import Python code files from the file system. This is the central main function of ultraimport.
 
@@ -66,7 +67,8 @@ def ultraimport(file_path, objects_to_import=None, add_to_ns=None, preprocessor=
             working directory will be used for `__dir__`. If you use advanced debugging tools (or want to save some
             CPU cycles) you might want to set `caller=__file__`.
 
-        objects_to_import (str | (Iterable[str] | Dict[str, object]): Can have several modes depending on the type of the parameter.
+        objects_to_import (str | (Iterable[str] | Dict[str, object]): Can have several modes depending on the type of
+            the parameter.
         - (str): Name of a single object to import from the module in `file_path`. The special value `'*'`
             selects all objects from that module.
         - (Iterable[str]): A list of names of objects to import.
@@ -77,7 +79,8 @@ def ultraimport(file_path, objects_to_import=None, add_to_ns=None, preprocessor=
         add_to_ns (Dict[str, object]): add the `objects_to_import` to the dict provided. Usually called with
             `add_to_ns=locals()` if you want the imported module to be added to the global namespace of the caller.
 
-        preprocessor (callable): Takes the source code as an argument and can return a modified version of the source code. Check out the [debug-transform example](/examples/working/debug-transform) on how to use the preprocessor.
+        preprocessor (callable): Takes the source code as an argument and can return a modified version of the source code.
+            Check out the [debug-transform example](/examples/working/debug-transform) on how to use the preprocessor.
 
         package (str | int): Can have several modes depending on if you provide a string or an integer. If you provide
             a string, ultraimport will generate one or more namespace packages and use it as parent package of your
@@ -85,6 +88,12 @@ def ultraimport(file_path, objects_to_import=None, add_to_ns=None, preprocessor=
             `file_path` to calculate the namespace package. This can help with subsequent relative imports in your
             imported files. If `package` is set to the default `None`, the module will be imported without setting it
             parent `__package__`.
+
+        caller (str): Can be set `caller=__file__` to save some CPU cycles. Otherwise it will be derived from the current
+            stack.
+
+        caller_reference (str): Used internally for error handling of lazy loading. It contains the file name of the
+            caller and the line number separated by a colon.
 
         use_cache (bool): If set to `False`, allows re-importing of the same source file even if it was imported before.
             Otherwise a cached version of the imported module is returned.
@@ -96,6 +105,9 @@ def ultraimport(file_path, objects_to_import=None, add_to_ns=None, preprocessor=
         recurse (bool): If set to `True`, a built-in preprocessor is activated to transparently rewrite all relative
             import statements (those with a dot like `from . import something`) to ultraimport() calls. Use this mode
             if you have no control over the source code of the impored modules.
+
+        use_preprocessor_cache (bool): If set to `False`, the built-in preprocessor will not use any cache and always
+            recompile (preprocess) all code files. This is useful for debugging.
 
         cache_path_prefix (str): Directory for storing preprocessed files. If you use the preprocessor feature or if
             you use the option `recurse=True` (which in turn uses the preprocessor feature) you will have the option to
@@ -130,7 +142,7 @@ def ultraimport(file_path, objects_to_import=None, add_to_ns=None, preprocessor=
 
     frame = None
 
-    if not caller or add_to_ns == True:
+    if not caller or (add_to_ns == True) or lazy:
         caller, frame = find_caller(return_frame=True)
 
     if add_to_ns == True:
@@ -139,17 +151,19 @@ def ultraimport(file_path, objects_to_import=None, add_to_ns=None, preprocessor=
         else:
             raise Exception('No frame found to inject imported objects')
 
-    del frame
-
     if '__dir__' in file_path:
         file_path = file_path.replace('__dir__', os.path.dirname(caller))
 
     file_path = os.path.abspath(file_path)
 
     if lazy and (type(objects_to_import) == dict):
+
+        if not caller_reference:
+            caller_reference = f"{frame.f_code.co_filename}:{frame.f_lineno}"
+
         # Lazy load the whole module
         if not objects_to_import:
-            importer = lambda: ultraimport(file_path, caller=caller, use_cache=use_cache)
+            importer = lambda: ultraimport(file_path_orig, caller=caller, caller_reference=caller_reference, use_cache=use_cache)
             name = get_module_name(file_path)
             module = LazyModule(name, file_path, importer=importer)
             sys.modules[name] = module
@@ -158,7 +172,7 @@ def ultraimport(file_path, objects_to_import=None, add_to_ns=None, preprocessor=
         # Lazy load individual objects from the module
         if type(objects_to_import) == dict:
             # Construct lambda function that allows to load the desired file later on
-            importer = lambda: ultraimport(file_path, caller=caller, use_cache=use_cache)
+            importer = lambda: ultraimport(file_path_orig, caller=caller, caller_reference=caller_reference, use_cache=use_cache)
             for item, item_type in objects_to_import.items():
                 if item_type == callable:
                     objects_to_import[item] = LazyCallable(importer=importer, callable_name=item)
@@ -194,8 +208,7 @@ def ultraimport(file_path, objects_to_import=None, add_to_ns=None, preprocessor=
         if use_cache and cache_key in cache:
             module = cache[cache_key]
         else:
-
-            check_file_is_importable(file_path, file_path_orig)
+            check_file_is_importable(file_path, file_path_orig, caller_reference)
             name = get_module_name(file_path)
 
             # If we want to recruse, we need to add our recurse preprocessor
@@ -351,7 +364,7 @@ class ErrorRendererMixin():
 """
 
     def render_suggestion(self, line1, line2):
-        return f"\n\n ╲ {line1}\n ╱ {line2}\n"
+        return f"\n ╲ {line1}\n ╱ {line2}\n"
 
     def find_frame(self, frames, depth=1):
         while True:
@@ -365,7 +378,7 @@ class ErrorRendererMixin():
             return frame
 
 class RewrittenImportError(ImportError, ErrorRendererMixin):
-    def __init__(self, message='', combine=None, code_info=None, object_to_import=None, *args):
+    def __init__(self, message='', combine=None, code_info=None, object_to_import=None, *args, **kwargs):
 
         super().__init__('')
 
@@ -448,7 +461,7 @@ class CircularImportError(ImportError, ErrorRendererMixin):
         self.msg = f"{header}\n{body}{suggestion}"
 
 class ExecuteImportError(ImportError, ErrorRendererMixin):
-    def __init__(self, message=None, file_path=None, file_path_resolved=None, from_exception=None, depth=2, *args):
+    def __init__(self, message=None, file_path=None, file_path_resolved=None, from_exception=None, depth=2, *args, **kwargs):
 
         super().__init__()
 
@@ -485,7 +498,7 @@ class ExecuteImportError(ImportError, ErrorRendererMixin):
         self.msg = f"{header}\n{body}{suggestion}"
 
 class ResolveImportError(ImportError, ErrorRendererMixin):
-    def __init__(self, message=None, file_path=None, file_path_resolved=None, from_exception=None, *args):
+    def __init__(self, message=None, file_path=None, file_path_resolved=None, from_exception=None, caller_reference=None, *args, **kwargs):
 
         super().__init__()
 
@@ -497,11 +510,29 @@ class ResolveImportError(ImportError, ErrorRendererMixin):
 
         header = self.render_header('Resolve Import Error', 'An import file could not be found or not be read.')
 
+        #frame = traceback.extract_stack()
+        #print('FRAMES', frame)
+        frame = self.find_frame(frames=traceback.extract_stack())
         error_table = [
-            ('Import file_path', self.file_path),
-            ('Resolved file_path', self.file_path_resolved),
+            ('Source file', f"{frame.filename}:{frame.lineno}"),
+            ('Happend in', frame.name),
+            ('Source code', frame.line),
+            ('Import file_path', file_path),
+            ('Resolved file_path', file_path_resolved),
             ('Possible reason', self.reason)
         ]
+
+        if caller_reference:
+            error_table.insert(0, ('Lazy loaded', caller_reference))
+            error_table = [
+                ('Source file', caller_reference),
+                ('Lazy loading triggered', f"{frame.filename}:{frame.lineno}"),
+                ('Happend in', frame.name),
+                ('Source code', frame.line),
+                ('Import file_path', file_path),
+                ('Resolved file_path', file_path_resolved),
+                ('Possible reason', self.reason)
+            ]
 
         suggestion = ''
         if file_path_resolved and not file_path_resolved.endswith('.py'):
@@ -1005,15 +1036,18 @@ def find_existing_module_by_path(file_path):
 
     return None
 
-def check_file_is_importable(file_path, file_path_orig):
+def check_file_is_importable(file_path, file_path_orig, caller_reference=None):
     if not os.path.exists(file_path):
-        raise ResolveImportError('File does not exist.', file_path=file_path_orig, file_path_resolved=file_path)
+        raise ResolveImportError('File does not exist.', file_path=file_path_orig,
+                                 file_path_resolved=file_path, caller_reference=caller_reference)
 
     if not os.path.isfile(file_path):
-        raise ResolveImportError('Object exists but is not a file.', file_path=file_path_orig, file_path_resolved=file_path)
+        raise ResolveImportError('Object exists but is not a file.', file_path=file_path_orig,
+                                 file_path_resolved=file_path, caller_reference=caller_reference)
 
     if not os.access(file_path, os.R_OK):
-        raise ResolveImportError('File exists but no read access.', file_path=file_path_orig, file_path_resolved=file_path)
+        raise ResolveImportError('File exists but no read access.', file_path=file_path_orig,
+                                 file_path_resolved=file_path, caller_reference=caller_reference)
 
     return True
 

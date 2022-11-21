@@ -302,10 +302,11 @@ We love contributions!
 ultraimport is open source, built on open source, and we'd love to have you hang out in our community.
 
 
-## The Issue: Broken Relative Imports in Python
+## The Issue: Relative Imports in Python
 
-Classically, to do a relative import, your Python script would look like this if you wanted to import
+Classically, to do a relative import, your Python script `run.py` would look like this if you wanted to import
 the `logger` object from a `logging.py` module in the same directory:
+
 ```python
 from .logging import logger
 
@@ -356,9 +357,9 @@ python ./run.py
 
 You wonder: Why does Python come to a different conclusion depending on the way how I run the program?
 
-The error ***`ImportError: attempted relative import with no known parent package`***
-is rather erratic because the code has never changed. sometimes you would also get
-***`ValueError: attempted relative import beyond top-level package`***
+The error **`ImportError: attempted relative import with no known parent package`**
+is rather erratic because the code has never changed. Sometimes you would also get
+**`ValueError: attempted relative import beyond top-level package`**.
 
 There actually *is* a known parent package. It's the directory where the code lives in.
 Sometimes Python can see it, sometimes not.
@@ -366,19 +367,18 @@ Sometimes Python can see it, sometimes not.
 Even if there was no parent package, what's the issue with importing a module that
 I only know from its relative position to my current module?
 
-With ultraimport your program `run.py` will always find `log.py`, no matter how you run it.
-You could change `run.py` to look like this:
+With ultraimport your program `run.py` will always find `logging.py` in the same directory,
+no matter how you run it. You could change it to look like this:
 
-run.py:
 ```python
 #!/usr/bin/env python3
 
-# ultraimport needs to be installed and imported in the classical way.
+# ultraimport needs to be installed and imported in the classical way
 import ultraimport
 
-# Import the 'logger' object from 'log.py' that is located in the same
-# directory as this file and add 'logger' to the global namespace.
-# `__dir__` refers to the directory where run.py is in.
+# Import the 'logger' object from 'logging.py' that is located in the same
+# directory as this file.
+# Note: `__dir__` refers to the directory where this file is in.
 logger = ultraimport('__dir__/logging.py', 'logger')
 
 def main():
@@ -423,6 +423,7 @@ python ./run.py
 ### Python Relative Import Limitations
 
 > https://peps.python.org/pep-0328/#relative-imports-and-name
+>
 > Relative imports use a module's __name__ attribute to determine that module's position in the package hierarchy.
 > If the module's name does not contain any package information (e.g. it is set to '__main__') then relative imports
 > are resolved as if the module were a top level module, regardless of where the module is actually located on the file system.
