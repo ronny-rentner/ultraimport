@@ -13,14 +13,16 @@ version = "0.0.7"
 dependencies= [
     'astor; python_version < "3.9"'
 ]
-requires-python = '>=3.5'
+requires-python = '>=3.8'
 
 [[authors]]
 name = "Ronny Rentner"
 email = "ultraimport.code@ronny-rentner.de"
 
 [project.urls]
-main = "https://github.com/ronny-rentner/ultraimport"
+Homepage = "https://github.com/ronny-rentner/ultraimport"
+Repository = "https://github.com/ronny-rentner/ultraimport"
+Documentation = "https://github.com/ronny-rentner/ultraimport/tree/main/docs"
 
 [tool.setuptools]
 # FIXME: Does not work, the files are still included
