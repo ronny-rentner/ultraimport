@@ -227,7 +227,7 @@ from yellow.cherry import Cherry
 
 ## Documentation
 
-The full interface documentation can be find in the [docs/](/docs/) folder.
+The [full interface documentation](/docs/) can be find in the [docs/](/docs/) folder. This is just an excerpt of the main function.
 
 ## `ultraimport` <kbd>function</kbd> <kbd>[:link: source](https://github.com/ronny-rentner/ultraimport/blob/main/ultraimport.py#L58)</kbd>
 
