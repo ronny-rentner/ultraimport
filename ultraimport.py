@@ -1,7 +1,7 @@
 #
 # ultraimport
 #
-# Reliable, file system based imports -- no matter how you run your code
+# Get control over your imports -- no matter how you run your code.
 #
 # Copyright [2022] [Ronny Rentner] [ultraimport.code@ronny-rentner.de]
 #
@@ -21,6 +21,7 @@
 import importlib, importlib.machinery, importlib.util
 import ast, collections, contextlib, inspect, os, pathlib, sys, types, traceback, time
 
+# If possible, let's print nice exceptions via rich
 try:
     from rich.traceback import install
     install(show_locals=False)
@@ -29,32 +30,293 @@ except:
 
 __all__ = ['ultraimport']
 
+# Needed for code transformation
 if not hasattr(ast, 'unparse'):
     import astor
     ast.unparse = astor.to_source
 
-try:
-    import astprettier
-except:
-    pass
+# Needed for debug output
+try: import astprettier
+except: pass
 
+# Keep track of reload count
+""" Keep track """
 reload_counter = 0
+""" Keep track """
+
+# Dict of loaded files, the keys are tuples of two
+# input parameters of the ultraimport() function: file_path and the package parameter
 cache = {}
+
+# Keep track of ongoing imports to detect circular imports
 import_ongoing_stack = {}
 
+# Print debug output, especially for code transformation
 debug = False
 #debug = True
 
-#if not debug:
-#    _rich_traceback_omit = True
+def ultraimport(file_path, objects_to_import=None, add_to_ns=None, preprocessor=None, package=None, caller=None, use_cache=True, lazy=False, recurse=False, inject=None, use_preprocessor_cache=True, cache_path_prefix=None):
+    """
+    Import Python code files from the file system. This is the central main function of ultraimport.
+
+    Parameters:
+        file_path (str): Path to the module file that should be imported. It can have any file extension. Please be
+            aware that you must provide the file extension. The path can be relative or absolute. You can use the
+            special string `__dir__` to refer to the directory of the caller. If run from a Python REPL, the current
+            working directory will be used for `__dir__`. If you use advanced debugging tools (or want to save some
+            CPU cycles) you might want to set `caller=__file__`.
+
+        objects_to_import (str | (Iterable[str] | Dict[str, object]): Can have several modes depending on the type of the parameter.
+        - (str): Name of a single object to import from the module in `file_path`. The special value `'*'`
+            selects all objects from that module.
+        - (Iterable[str]): A list of names of objects to import.
+        - (Dict[str, object]): The keys represent the names of the objects to import. The values define
+            the expected types of those objects. A `TypeError` is thrown if the types don't match the
+            expectation. If you set `lazy=True`, you must use a dict for `objects_to_import` and define the types.
+
+        add_to_ns (Dict[str, object]): add the `objects_to_import` to the dict provided. Usually called with
+            `add_to_ns=locals()` if you want the imported module to be added to the global namespace of the caller.
+
+        preprocessor (callable): Takes the source code as an argument and can return a modified version of the source code. Check out the [debug-transform example](/examples/working/debug-transform) on how to use the preprocessor.
+
+        package (str | int): Can have several modes depending on if you provide a string or an integer. If you provide
+            a string, ultraimport will generate one or more namespace packages and use it as parent package of your
+            imported module. If you set an integer, it means the number of path parts (directories) to extract from the
+            `file_path` to calculate the namespace package. This can help with subsequent relative imports in your
+            imported files. If `package` is set to the default `None`, the module will be imported without setting it
+            parent `__package__`.
+
+        use_cache (bool): If set to `False`, allows re-importing of the same source file even if it was imported before.
+            Otherwise a cached version of the imported module is returned.
+
+        lazy (bool): *Experimental* *wip* If set to `True` and if `objects_to_import` is set to `None`, it will lazy
+            import the module. If set to True and `objects_to_import` is a dict, the values of the dict must be the
+            type of the object to lazy import from the module. Currently only the type `callable` is supported.
+
+        recurse (bool): If set to `True`, a built-in preprocessor is activated to transparently rewrite all relative
+            import statements (those with a dot like `from . import something`) to ultraimport() calls. Use this mode
+            if you have no control over the source code of the impored modules.
+
+        cache_path_prefix (str): Directory for storing preprocessed files. If you use the preprocessor feature or if
+            you use the option `recurse=True` (which in turn uses the preprocessor feature) you will have the option to
+            store the resulting code after preprocessing. By default, they are stored in parallel to the original
+            source code files, but this option allows to override to location. One common setting is
+            `cache_path_prefix='__pycache__'` to store the processed files along with the bytecode files.
+            _Note_: Even when you change this directory, this will be hidden from Python. Towards Python, the
+            preprocessed files will always look like they are in the same directory as the original source code files,
+            even if they are not.
+
+    Returns:
+        Depending on the parameters *returns one of the following*:
+
+        object: If `objects_to_import` is `None`, returns a single module object.
+
+        object: If `objects_to_import` is a `str`, returns the single object with the specified name from the imported module.
+
+        dict: If `objects_to_import` has the value `'*'`, returns a dict of all items from the imported module.
+
+        list: If `objects_to_import` is a `List[str]`, return a list of imported objects from the imported module.
+
+    """
+
+    if debug:
+        print("ultraimport", file_path)
+
+    file_path_orig = file_path
+
+    # If we are in Cython compiled code, there are not frames for what happens inside ultraimport
+    if __file__.endswith('.so') or __file__.endswith('.pyx'):
+        caller_level = 0
+
+    frame = None
+
+    if not caller or add_to_ns == True:
+        caller, frame = find_caller(return_frame=True)
+
+    if add_to_ns == True:
+        if frame:
+            add_to_ns = frame.f_locals
+        else:
+            raise Exception('No frame found to inject imported objects')
+
+    del frame
+
+    if '__dir__' in file_path:
+        file_path = file_path.replace('__dir__', os.path.dirname(caller))
+
+    file_path = os.path.abspath(file_path)
+
+    if lazy and (type(objects_to_import) == dict):
+        # Lazy load the whole module
+        if not objects_to_import:
+            importer = lambda: ultraimport(file_path, caller=caller, use_cache=use_cache)
+            name = get_module_name(file_path)
+            module = LazyModule(name, file_path, importer=importer)
+            sys.modules[name] = module
+            return module
+
+        # Lazy load individual objects from the module
+        if type(objects_to_import) == dict:
+            # Construct lambda function that allows to load the desired file later on
+            importer = lambda: ultraimport(file_path, caller=caller, use_cache=use_cache)
+            for item, item_type in objects_to_import.items():
+                if item_type == callable:
+                    objects_to_import[item] = LazyCallable(importer=importer, callable_name=item)
+                else:
+                    raise Exception("Only types 'callable' and 'module' are supported")
+
+            if add_to_ns:
+                add_to_ns.update(objects_to_import)
+
+            if len(objects_to_import) == 1:
+                return list(objects_to_import.values())[0]
+
+            return list(objects_to_import.values())
+        else:
+            raise Exception("When setting lazy=True the parameter objects_to_import must be a dict.")
+
+    if file_path in import_ongoing_stack:
+        # TODO: Come up with better error message how to handle circular import errors
+        raise CircularImportError(file_path=file_path_orig, file_path_resolved=file_path)
+
+    with contextlib.ExitStack() as cleaner:
+        cleaner.callback(import_ongoing_stack.pop, file_path, None)
+
+        import_ongoing_stack[file_path] = True
+
+
+        #print('CACHE CHECK', use_cache, file_path, file_path in cache)
+        #print('CACHE', cache)
+
+        cache_key = (file_path, package)
+
+        # TODO: Should we use resolved file_path for the cache?
+        if use_cache and cache_key in cache:
+            module = cache[cache_key]
+        else:
+
+            check_file_is_importable(file_path, file_path_orig)
+            name = get_module_name(file_path)
+
+            # If we want to recruse, we need to add our recurse preprocessor
+            # to any other preprocessors from the user
+            preprocessor_combined = preprocessor
+            if recurse:
+                def _(source, *args, **kwargs):
+                    if preprocessor:
+                        source = preprocessor(source, *args, **kwargs)
+                    return RewriteImport.transform_imports(source, *args, **kwargs)
+                preprocessor_combined = _
+
+            package_name, package_path, package_module = get_package_name(file_path, package)
+
+            # Long name of the module including parent package if available
+            full_name = f'{package_name}.{name}' if package_name else name
+
+            loader = Loader(full_name, file_path, preprocessor=preprocessor_combined, use_cache=use_preprocessor_cache, cache_path_prefix=cache_path_prefix)
+            spec = importlib.util.spec_from_loader(full_name, loader)
+
+            module = importlib.util.module_from_spec(spec)
+
+            # Inject ultraimport module
+            module.ultraimport = sys.modules[__name__]
+
+            # Inject other dependencies
+            if inject:
+                for k, v in inject.items():
+                    setattr(module, k, v)
+
+            #print('__package__', package_name)
+            #print('__path__', package_path)
+            #print('module', module)
+            if package_name:
+                module.__package__ = package_name
+                # Inject module into the package
+                setattr(package_module, name, module)
+
+            sys.modules[name] = module
+            if use_cache:
+                cache[cache_key] = module
+
+            try:
+                spec.loader.exec_module(module)
+            except ImportError as e:
+                # If the import fails, we do not cache the module
+                if cache_key in cache:
+                    del cache[cache_key]
+                if name in sys.modules:
+                    del sys.modules[name]
+
+                # TODO: Move all the error case handling to the exception classes directly
+                #print(e.msg, e.name, e.path)
+                if (e.msg == 'attempted relative import with no known parent package' or
+                    e.msg == 'attempted relative import beyond top-level package'):
+                    if recurse:
+                        raise ImportError('This is an internal ultraimport error. Please report this bug and the circumstances!')
+                    if package:
+                        raise ExecuteImportError('Wrongly handled, relative import statement found.', file_path=file_path_orig, file_path_resolved=file_path, from_exception=e).with_traceback(e.__traceback__) from None
+                    else:
+                        raise ExecuteImportError('Unhandled, relative import statement found.', file_path=file_path_orig, file_path_resolved=file_path, from_exception=e).with_traceback(e.__traceback__) from None
+                if (e.msg.startswith('cannot import name') and e.msg.endswith('(unknown location)')):
+                        raise ExecuteImportError(str(e), file_path=file_path_orig, file_path_resolved=file_path, from_exception=e).with_traceback(e.__traceback__) from None
+                else:
+                    raise e
+
+        if objects_to_import:
+            return_single = False
+            return_zipped = False
+            if objects_to_import == '*':
+                objects_to_import = [ item for item in dir(module) if not item.startswith('__') ]
+                return_zipped = True
+            elif type(objects_to_import) == str:
+                objects_to_import = [ objects_to_import ]
+                return_single = True
+
+            values = []
+            for item in objects_to_import:
+                try:
+                    attr = getattr(module, item)
+                    # When it's a dict, we expect the types of the imports to be the values
+                    if (type(objects_to_import) == dict):
+                        if not isinstance(attr, objects_to_import[item]):
+                            raise TypeError(f"Import type mismatch, expected '{item}' to be of type {objects_to_import[item]} but got {type(attr)}")
+                    values.append(getattr(module, item))
+                except AttributeError as e:
+                    raise ResolveImportError(str(e), file_path=file_path_orig, file_path_resolved=file_path) from None
+
+            if add_to_ns or return_zipped:
+                zipped = dict(zip(objects_to_import, values))
+
+            if add_to_ns:
+                add_to_ns.update(zipped)
+
+            if return_single:
+                return values[0]
+
+            if return_zipped:
+                return zipped
+
+            return values
+        # If there are no `objects_to_import`, it means we should import the whole module.
+        # If `add_to_ns` is set, we must add it to this namespace.
+        # TODO: Check that add_to_ns can take key/value pairs.
+        elif add_to_ns:
+            add_to_ns[module.__name__] = module
+
+        if debug:
+            print('module:', module)
+
+        return module
 
 ##################
 # ERROR HANDLING #
 ##################
 
+# TODO: Switch to internal Python code info object
 CodeInfo = collections.namedtuple('CodeInfo', ['source', 'file_path', 'line', 'offset'])
 
 class ErrorRendererMixin():
+    """ Mixin for Exception classes with some helper functions, mainly for rendering data to console """
 
     def render_table(self, data):
         """
@@ -75,7 +337,7 @@ class ErrorRendererMixin():
 
         table_lines = [ f" {k:>{column1_size}} │ {v}" for k, v in data ]
 
-        return '\n'.join(table_lines)
+        return '\n'.join(table_lines) + '\n'
 
     def render_header(self, headline, message):
         headline_border = '─' * len(headline)
@@ -190,6 +452,12 @@ class ExecuteImportError(ImportError, ErrorRendererMixin):
 
         super().__init__()
 
+        # Save file_path for later analyzation
+        self.file_path = file_path
+        self.file_path_resolved = file_path_resolved
+        # Store the original reason/message for later
+        self.reason = message
+
         header = self.render_header('Execute Import Error', 'An import file could be found and read, but an error happened while executing it.')
         suggestion = ''
 
@@ -202,11 +470,16 @@ class ExecuteImportError(ImportError, ErrorRendererMixin):
 
         if from_exception and from_exception.msg == 'attempted relative import with no known parent package':
             error_table.append(('Possible reason', 'A subsequent, relative import statement was found, but not handled.'))
-            error_table.append(('Original errror', f'"{from_exception.msg}"'))
 
             suggestion = self.render_suggestion('To handle the relative import from above, use the ultraimport() parameter `recurse=True`.',
-                'This will activate automatic rewriting of subsequent, relative imports.')
+                'This will activate automatic rewriting of subsequent, relative imports. Alternatively set `package=<int>` to create a virtual package.')
+        if from_exception and from_exception.msg == 'attempted relative import beyond top-level package':
+            error_table.append(('Possible reason', 'A subsequent, relative import statement was found, but not handled correctly.'))
 
+            suggestion = self.render_suggestion('To handle the relative import from above, use the ultraimport() parameter `recurse=True`.',
+                'This will activate automatic rewriting of subsequent, relative imports. Alternatively set `package=<int>` to create a virtual package.')
+
+        error_table.append(('Original error', f'"{from_exception.msg}"'))
         body = self.render_table(error_table)
 
         self.msg = f"{header}\n{body}{suggestion}"
@@ -283,9 +556,13 @@ class LazyModule(types.ModuleType):
             return self._module
         return self._module.__getattribute__(key)
 
+###########
+# LOADERS #
+###########
+
 class Loader:
+    """ Loader factory that returns either SourceFileLoader or ExtensionFileLoader depending on file_path """
     def __new__(cls, name, file_path, *args, **kwargs):
-        """ Returns either SourceFileLoader or ExtensionFileLoader depending on file_path """
         _, suffix = os.path.splitext(file_path)
 
         if suffix in importlib.machinery.EXTENSION_SUFFIXES:
@@ -300,6 +577,7 @@ class SourceFileLoader(importlib.machinery.SourceFileLoader):
     """ Preprocessing Python source file loader """
 
     def __init__(self, name, file_path, preprocessor=None, use_cache=True, cache_path_prefix=None):
+        # Note: It seems the module name here is not really used in Python internally
         super().__init__(name, file_path)
         self.preprocessor = preprocessor
         self.use_cache = use_cache
@@ -399,6 +677,10 @@ class SourceFileLoader(importlib.machinery.SourceFileLoader):
             return self.preprocess_file_path_display
         return self.path
 
+###########
+# REWRITE #
+###########
+
 class RewriteImport(ast.NodeTransformer):
 
     def __init__(self, file_path=None, *args):
@@ -466,7 +748,7 @@ class RewriteImport(ast.NodeTransformer):
         ]
 
         if import_elts == '*':
-            keywords.append(self.gen_keyword('globals', self.gen_call('globals')))
+            keywords.append(self.gen_keyword('add_to_ns', self.gen_call('add_to_ns')))
 
         return ast.Call(
             func=ast.Name(id='ultraimport', ctx=ast.Load()),
@@ -577,9 +859,20 @@ class RewriteImport(ast.NodeTransformer):
 
         return imports
 
+##########
+# HELPER #
+##########
 
 def get_module_name(file_path):
-    """ Calculate Python compatible module name from file_path """
+    """
+    Return Python compatible module name from file_path. Replace dash and dot characters with underscore characters.
+
+    Parameters:
+        file_path (str): File path to a module or directory path to a package
+
+    Returns:
+        module_name (str): Extracted and escaped name of the module
+    """
 
     # Try Python internal approach first
     name = inspect.getmodulename(file_path)
@@ -592,6 +885,24 @@ def get_module_name(file_path):
     return name.replace('-', '_').replace('.', '_')
 
 def get_package_name(file_path, package):
+    """
+    Generate necessary package hierarchy according to the `package` parameter and
+    create virtual namespace packages accordingly.
+
+    Parameters:
+        file_path (str): File path to a module or directory path to a package
+        package (str): Provide package name as a string. Can contain multiple parts separated by dots.
+                       The `__path__` of the package will be set to the parent directory of `file_path`.
+        package (int): Derive package name from the parent directory name(s) of `file_path` using <package> number
+                       of parent directories.
+
+    Returns:
+        A tuple containing
+
+        package_name (str): Name of the package
+        package_path (str): Path to the package
+        package_module (types.ModuleType): Package module object
+    """
     path = os.path.abspath(file_path if os.path.isdir(file_path) else os.path.dirname(file_path))
     if type(package) == str:
         rest, dot, name = package.rpartition('.')
@@ -608,8 +919,78 @@ def get_package_name(file_path, package):
         return get_package_name(path, package)
     return None, None, None
 
-def create_ns_package(package_name, package_path):
-    """ Create dynamic namespace package on the fly """
+def find_caller(return_frame=False):
+    """
+    Find out who is calling by looking at the stack and searching for the first external frame.
+
+    Parameters:
+        return_frame (bool): If True, also return the stack frame.
+
+    Returns:
+        Depending on the parameters returns *one* of the following:
+
+        str: A string with the caller name
+        str, frame: A string with the caller name, the stack frame that was used to extract the caller name
+    """
+
+    frame = inspect.currentframe()
+
+    # Note: If we run a compiled ultraimport module from Python REPL, there will only be one frame
+    #       on the stack called <stdin>, and there will be no ultraimport frame, so __do not__ go back
+    #       one frame automatically.
+    #frame = frame.f_back
+
+    while frame:
+        if frame.f_code.co_filename != __file__:
+            break
+        frame = frame.f_back
+
+    caller = frame.f_code.co_filename
+
+    # If we are being used from a compiled module, we need to do
+    # some more steps to extract the file name of the compiled module
+    if caller == '<frozen importlib._bootstrap>':
+        if 'args' in frame.f_locals and len(frame.f_locals['args']) > 0:
+            caller = frame.f_locals['args'][0].__file__
+        else:
+            raise Exception('Cannot extract file name from caller. Please report this issue. In the meantime, you can use  when using ultraimport(..., caller=__file__)')
+
+    if caller == '<stdin>':
+        caller = f"{os.getcwd()}{os.sep}<stdin>"
+
+    if return_frame:
+        return caller, frame
+
+    del frame
+
+    return caller
+
+def create_ns_package(package_name, package_path, caller=None):
+    """
+    Create one or more dynamic namespace packages on the fly.
+
+    Parameters:
+        package_name (str): Name of the namespace package that should be created.
+
+        package_path (str): File system path of a directory that should be associated with the package.
+            You can use the special string `__dir__` to refer to the directory of the caller. If run from a Python
+            REPL, the current working directory will be used for `__dir__`.
+
+        caller (str): File system path to the file of the calling module. If you use advanced debugging tools
+            (or want to save some CPU cycles) you might want to set `caller=__file__`. Otherwise the caller
+            is derrived from the frame stack.
+    """
+
+    if '__dir__' in package_path:
+        if not caller:
+            caller = find_caller()
+        package_path = os.path.abspath(package_path.replace('__dir__', os.path.dirname(caller)))
+
+    rest, dot, name = package_name.rpartition('.')
+    # Make sure to create parent package first
+    if rest:
+        create_ns_package(rest, os.path.dirname(package_path), caller=caller)
+
     loader = importlib._bootstrap_external._NamespaceLoader('loader', [package_path], None)
     spec = importlib.util.spec_from_loader(package_name, loader)
     package = importlib.util.module_from_spec(spec)
@@ -636,230 +1017,19 @@ def check_file_is_importable(file_path, file_path_orig):
 
     return True
 
-def ultraimport(file_path, objects_to_import=None, globals=None, preprocessor=None, package=None, caller=None, caller_level=1, use_cache=True, lazy=False, recurse=False, inject=None, use_preprocessor_cache=True, cache_path_prefix=None):
-    """ Import file from file system. """
-
-    if debug:
-        print("ultraimport", file_path)
-
-    file_path_orig = file_path
-
-    # If we are in Cython compiled code, there are not frames for what happens inside ultraimport
-    if __file__.endswith('.so') or __file__.endswith('.pyx'):
-        caller_level = 0
-
-    frame = None
-
-    # We are supposed to replace the string `__dir__` in file_path with the directory of the caller.
-    # If the caller is not provided via parameter, we'll find it out ourselves.
-    if not caller:
-        #stack = inspect.stack()
-        #if caller_level >= len(stack):
-        #    caller_level = len(stack) - 1
-        #caller = stack[caller_level].filename
-        frame = inspect.currentframe()
-
-        # Search for the right frame
-        for i in range(caller_level):
-            if hasattr(frame, 'f_back') and frame.f_back:
-                frame = frame.f_back
-            else:
-                break
-
-        caller = frame.f_code.co_filename
-
-        # If we are being used from a compiled module, we need to do
-        # some more steps to extract the file name of the compiled module
-        if caller == '<frozen importlib._bootstrap>':
-            if 'args' in frame.f_locals and len(frame.f_locals['args']) > 0:
-                caller = frame.f_locals['args'][0].__file__
-            else:
-                raise Exception('Cannot extract file name from caller. Please report this issue. In the meantime, you can use  when using ultraimport(..., caller=__file__)')
-
-    if objects_to_import == '*' and globals == None:
-        if frame:
-            globals = frame.f_locals
-        else:
-            raise ValueError("Cannot import '*' without having globals set.")
-
-    if caller == '<stdin>':
-        caller = f"{os.getcwd()}{os.sep}<stdin>"
-
-    del frame
-
-    if '__dir__' in file_path:
-        file_path = file_path.replace('__dir__', os.path.dirname(caller))
-
-    file_path = os.path.abspath(file_path)
-
-    if lazy and (type(objects_to_import) == dict):
-        # Lazy load the whole module
-        if not objects_to_import:
-            importer = lambda: ultraimport(file_path, caller=caller, use_cache=use_cache)
-            name = get_module_name(file_path)
-            module = LazyModule(name, file_path, importer=importer)
-            sys.modules[name] = module
-            return module
-
-        # Lazy load individual objects from the module
-        if type(objects_to_import) == dict:
-            # Construct lambda function that allows to load the desired file later on
-            importer = lambda: ultraimport(file_path, caller=caller, use_cache=use_cache)
-            for item, item_type in objects_to_import.items():
-                if item_type == callable:
-                    objects_to_import[item] = LazyCallable(importer=importer, callable_name=item)
-                else:
-                    raise Exception("Only types 'callable' and 'module' are supported")
-
-            if globals:
-                globals.update(objects_to_import)
-
-            if len(objects_to_import) == 1:
-                return list(objects_to_import.values())[0]
-
-            return list(objects_to_import.values())
-        else:
-            raise Exception("When setting lazy=True the parameter objects_to_import must be a dict.")
-
-    if file_path in import_ongoing_stack:
-        # TODO: Come up with better error message how to handle circular import errors
-        raise CircularImportError(file_path=file_path_orig, file_path_resolved=file_path)
-
-    with contextlib.ExitStack() as cleaner:
-        cleaner.callback(import_ongoing_stack.pop, file_path, None)
-
-        import_ongoing_stack[file_path] = True
-
-        #print('CACHE CHECK', use_cache, file_path, file_path in cache)
-        #print('CACHE', cache)
-
-        # TODO: Should we use resolved file_path for the cache?
-        if use_cache and file_path in cache:
-            module = cache[file_path]
-        else:
-
-            check_file_is_importable(file_path, file_path_orig)
-            name = get_module_name(file_path)
-
-            # If we want to recruse, we need to add our recurse preprocessor
-            # to any other preprocessors from the user
-            preprocessor_combined = preprocessor
-            if recurse:
-                def _(source, *args, **kwargs):
-                    if preprocessor:
-                        source = preprocessor(source, *args, **kwargs)
-                    return RewriteImport.transform_imports(source, *args, **kwargs)
-                preprocessor_combined = _
-
-            #loader = None
-            #if is_compiled(file_path):
-            loader = Loader(name, file_path, preprocessor=preprocessor_combined, use_cache=use_preprocessor_cache, cache_path_prefix=cache_path_prefix)
-            spec = importlib.util.spec_from_loader(name, loader)
-            module = importlib.util.module_from_spec(spec)
-
-            # Inject ultraimport module
-            module.ultraimport = sys.modules[__name__]
-
-            # Inject other dependencies
-            if inject:
-                for k, v in inject.items():
-                    setattr(module, k, v)
-
-            package_name, package_path, package_module = get_package_name(file_path, package)
-            #print('__package__', package_name)
-            #print('__path__', package_path)
-            if package_name:
-                module.__package__ = package_name
-                setattr(package_module, __name__, module)
-
-            sys.modules[name] = module
-            if use_cache:
-                cache[file_path] = module
-
-            try:
-                spec.loader.exec_module(module)
-            except ImportError as e:
-                # If the import fails, we do not cache the module
-                if file_path in cache:
-                    del cache[file_path]
-                if name in sys.modules:
-                    del sys.modules[name]
-
-                #print(e.msg, e.name, e.path)
-                if (e.msg == 'attempted relative import with no known parent package' or
-                    e.msg == 'attempted relative import beyond top-level package'):
-                    if recurse:
-                        raise ImportError('This is an internal ultraimport error. Please report this bug and the circumstances!')
-                    if package:
-                        raise ImportError(f'ultraimport found an import ambiguity when importing {file_path}.\nYou need to either increase the level of package=int or, if that does not help, set recurse=True.')
-                    else:
-                        #e.msg = f'ultraimport found an import ambiguity when importing {file_path}.\nYou need to either set the level of package=int or, if that does not help, set recurse=True.'
-                        raise ExecuteImportError('Unhandled, relative import statement found.', file_path=file_path_orig, file_path_resolved=file_path, from_exception=e).with_traceback(e.__traceback__) from None
-                else:
-                    raise e
-
-        if objects_to_import:
-            return_single = False
-            if objects_to_import == '*':
-                objects_to_import = [ item for item in dir(module) if not item.startswith('__') ]
-            elif type(objects_to_import) == str:
-                objects_to_import = [ objects_to_import ]
-                return_single = True
-
-            values = []
-            for item in objects_to_import:
-                try:
-                    attr = getattr(module, item)
-                    # When it's a dict, we expect the types of the imports to be the values
-                    if (type(objects_to_import) == dict):
-                        if not isinstance(attr, objects_to_import[item]):
-                            raise TypeError(f"Import type mismatch, expected '{item}' to be of type {objects_to_import[item]} but got {type(attr)}")
-                    values.append(getattr(module, item))
-                except AttributeError as e:
-                    raise ResolveImportError(str(e), file_path=file_path_orig, file_path_resolved=file_path) from None
-
-            if globals:
-                globals.update(zip(objects_to_import, values))
-
-            if return_single:
-                return values[0]
-
-            return values
-        elif globals:
-            globals[module.__name__] = module
-
-        if debug:
-            print('module:', module)
-
-        return module
-
 def reload(ns=None, add_to_ns=True):
     """ Reload ultraimport module """
-    reloaded = ultraimport(__file__, use_cache=False)
-    reloaded.reload_counter = reload_counter + 1
-    CallableModule = reloaded.CallableModule
-    cache = {}
-
-    if ns and add_to_ns:
-        ns['ultraimport'] = reloaded
-    elif not ns and add_to_ns:
-        frame = inspect.currentframe()
-        frame = frame.f_back
-        while frame:
-            if 'ultraimport' in frame.f_locals:
-                frame.f_locals['ultraimport'] = reloaded
-            if 'ultraimport' in frame.f_globals:
-                frame.f_globals['ultraimport'] = reloaded
-            frame = frame.f_back
-
-        del frame
+    count = reload_counter
+    reloaded = importlib.reload(sys.modules[__name__])
+    reloaded.reload_counter = count + 1
+    reloaded.cache = {}
 
     return reloaded
 
-# Make ultraimport() directly callable after doing `import ultraimport`
 class CallableModule(types.ModuleType):
+    """ Makes ultraimport directly callable after doing `import ultraimport` """
     def __call__(self, *args, **kwargs):
-        kwargs['caller_level'] = 2
         return ultraimport(*args, **kwargs)
 
 sys.modules[__name__].__class__ = CallableModule
+__path__ = os.path.dirname(__file__)
