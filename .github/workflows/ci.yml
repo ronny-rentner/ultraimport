@@ -5,7 +5,7 @@ on:
 
 jobs:
   build:
-    name: Build on ${{ matrix.config.name }} with ${{ matrix.python-version }}
+    name: Build on ${{ matrix.config.os }}, ${{ matrix.config.arch }}, ${{ matrix.python-version }}
     runs-on: ${{ matrix.config.os }}
     strategy:
       fail-fast: false
@@ -17,10 +17,10 @@ jobs:
           - name: "win32-amd64"
             os: windows-2019
             arch: AMD64
-          - name: "win32-x86"
+          - name: "win32-x86__2022"
             os: windows-2022
             arch: x86
-          - name: "win32-amd64"
+          - name: "win32-amd64__2022"
             os: windows-2022
             arch: AMD64
 
@@ -58,23 +58,23 @@ jobs:
             arch: s390x
             platform: s390x
 
-          - name: "linux-i386"
+          - name: "linux-i386__22.04"
             os: ubuntu-22.04
             arch: i686
             platform: i386
-          - name: "linux-x86_64"
+          - name: "linux-x86_64__22.04"
             os: ubuntu-22.04
             arch: x86_64
             platform: x86_64
-          - name: "linux-aarch64"
+          - name: "linux-aarch64__22.04"
             os: ubuntu-22.04
             arch: aarch64
             platform: aarch64
-          - name: "linux-ppc64le"
+          - name: "linux-ppc64le__22.04"
             os: ubuntu-22.04
             arch: ppc64le
             platform: ppc64le
-          - name: "linux-s390x"
+          - name: "linux-s390x__22.04"
             os: ubuntu-22.04
             arch: s390x
             platform: s390x
