@@ -34,9 +34,9 @@ class ultraimportTests(unittest.TestCase):
 
     def test_file_not_found_with_suggestion(self):
         # Missing file ending .py
-        file_path = f"__dir__{os.sep}..{os.sep}{os.path.normpath('examples/working/myprogram/run')}"
+        file_path = f"__dir__{os.sep}..{os.sep}{os.path.normpath('examples/myprogram/run')}"
         # This file_path will be suggested
-        file_path2 = os.path.normpath("examples/working/myprogram/run.py")
+        file_path2 = os.path.normpath("examples/myprogram/run.py")
         with self.assertRaises(ultraimport.ResolveImportError) as cm:
             ultraimport(file_path)
         message = str(cm.exception)
@@ -105,7 +105,7 @@ class ultraimportTests(unittest.TestCase):
 
     @unittest.skipUnless(sys.version_info >= (3, 9), "requires Python >= 3.9")
     def test_example_mypackage(self):
-        file_path = "examples/working/mypackage/run.py"
+        file_path = "examples/mypackage/run.py"
         ret = self.exec(file_path)
         self.assertEqual(ret.returncode, 0, f'Running {file_path} did return with an error: {ret}')
         self.assertEqual(ret.stdout, b"submodule start  submodule\n"
@@ -119,25 +119,25 @@ class ultraimportTests(unittest.TestCase):
             b"submodule end\n")
 
     def test_example_myprogram(self):
-        file_path = "examples/working/myprogram/run.py"
+        file_path = "examples/myprogram/run.py"
         ret = self.exec(file_path)
         self.assertEqual(ret.returncode, 0, f'Running {file_path} did return with an error: {ret}')
         self.assertEqual(ret.stdout, b"""I did something\ncache store: I did something\n""")
 
     def test_example_dependency_injection(self):
-        file_path = "examples/working/dependency-injection/run.py"
+        file_path = "examples/dependency-injection/run.py"
         ret = self.exec(file_path)
         self.assertEqual(ret.returncode, 0, f'Running {file_path} did return with an error: {ret}')
         self.assertEqual(ret.stdout, b"injected logger: worker.py is doing some work\n")
 
     def test_example_impossible_filename(self):
-        file_path = "examples/working/impossible-filename/run.py"
+        file_path = "examples/impossible-filename/run.py"
         ret = self.exec(file_path)
         self.assertEqual(ret.returncode, 0, f'Running {file_path} did return with an error: {ret}')
         self.assertEqual(ret.stdout, b"Hello world\n")
 
     def test_example_dynamic_namespace(self):
-        file_path = "examples/working/dynamic-namespace/run.py"
+        file_path = "examples/dynamic-namespace/run.py"
         ret = self.exec(file_path)
         self.assertEqual(ret.returncode, 0, f'Running {file_path} did return with an error: {ret}')
         self.assertIn(b"<module 'dynamic-namespace.utils'", ret.stdout)

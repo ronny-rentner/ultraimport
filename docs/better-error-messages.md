@@ -2,9 +2,9 @@
 When an import fails with ultraimport, either a direct `ultraimport()` call or a rewritten relative import using `recurse=True`, ultraimport tries to present a useful error message taht can actually help you solve the problem.
 
 ## Example 1:
-Let's try to import the `mypackage.mymodule` module from our [recurse example](/examples/working/recurse), but we'll keep our current working directory (which is this repo checked out).
+Let's try to import the `mypackage.mymodule` module from our [recurse example](/working/recurse), but we'll keep our current working directory (which is this repo checked out).
 ```pycon
->>> ultraimport('__dir__/examples/working/recurse/mypackage/mymodule')
+>>> ultraimport('__dir__/working/recurse/mypackage/mymodule')
 Traceback (most recent call last):
   File "<stdin>", line 1, in <module>
   File "/home/ronny/Projects/py/ultraimport/ultraimport.py", line 738, in __call__
@@ -21,11 +21,11 @@ ultraimport.ResolveImportError:
 
 An import file could not be found or not be read.
 
-   Import file_path │ __dir__/examples/working/recurse/mypackage/mymodule
- Resolved file_path │ /home/ronny/Projects/py/ultraimport/examples/working/recurse/mypackage/mymodule
+   Import file_path │ __dir__/working/recurse/mypackage/mymodule
+ Resolved file_path │ /home/ronny/Projects/py/ultraimport/working/recurse/mypackage/mymodule
     Possible reason │ File does not exist.
 
- ╲ Did you mean to import '/home/ronny/Projects/py/ultraimport/examples/working/recurse/mypackage/mymodule.py'?
+ ╲ Did you mean to import '/home/ronny/Projects/py/ultraimport/working/recurse/mypackage/mymodule.py'?
  ╱ You need to add the file extension '.py' to the file_path.
 
 ```
@@ -35,7 +35,7 @@ You'll get a hint on what was the resolved path and what could be the cause of t
 ## Example 2:
 Let's correct the error from our first example and add the .py file extension:
 ```pycon
->>> ultraimport('__dir__/examples/working/recurse/mypackage/mymodule.py')
+>>> ultraimport('__dir__/working/recurse/mypackage/mymodule.py')
 Traceback (most recent call last):
   File "<stdin>", line 1, in <module>
   File "/home/ronny/Projects/py/ultraimport/ultraimport.py", line 705, in __call__
@@ -46,7 +46,7 @@ Traceback (most recent call last):
     spec.loader.exec_module(module)
   File "<frozen importlib._bootstrap_external>", line 790, in exec_module
   File "<frozen importlib._bootstrap>", line 228, in _call_with_frames_removed
-  File "/home/ronny/Projects/py/ultraimport/examples/working/recurse/mypackage/mymodule.py", line 12, in <module>
+  File "/home/ronny/Projects/py/ultraimport/working/recurse/mypackage/mymodule.py", line 12, in <module>
     from .logger import log, other_logger as log2
 ultraimport.ExecuteImportError: 
 
@@ -56,7 +56,7 @@ ultraimport.ExecuteImportError:
 
 An import file could be found and read, but an error happened while executing it.
 
-     Source file │ /home/ronny/Projects/py/ultraimport/examples/working/recurse/mypackage/mymodule.py, line 12
+     Source file │ /home/ronny/Projects/py/ultraimport/working/recurse/mypackage/mymodule.py, line 12
       Happend in │ <module>
      Source code │ from .logger import log, other_logger as log2
  Possible reason │ A subsequent, relative import statement was found, but not handled.
@@ -72,7 +72,7 @@ Ok, now it found the file `mymodule.py` but in there is another relative import 
 ## Example 3:
 We actually have two different options now, but let's follow the suggestion from above and use `recurse=True`.
 ```pycon
->>> ultraimport('__dir__/examples/working/recurse/mypackage/mymodule.py', recurse=True)
+>>> ultraimport('__dir__/working/recurse/mypackage/mymodule.py', recurse=True)
 Traceback (most recent call last):
   File "<stdin>", line 1, in <module>
   File "/home/ronny/Projects/py/ultraimport/ultraimport.py", line 723, in __call__
@@ -83,8 +83,8 @@ Traceback (most recent call last):
     spec.loader.exec_module(module)
   File "<frozen importlib._bootstrap_external>", line 790, in exec_module
   File "<frozen importlib._bootstrap>", line 228, in _call_with_frames_removed
-  File "/home/ronny/Projects/py/ultraimport/examples/working/recurse/mypackage/mymodule__preprocessed__.py", line 23, in <module>
-    raise ultraimport.RewrittenImportError(code_info=('from . import log, other_logger as log2', '/home/ronny/Projects/py/ultraimport/examples/working/recurse/mypackage/mymodule.py', 6, 0), object_to_import='other_logger', combine=[e, e2, e3]) from None
+  File "/home/ronny/Projects/py/ultraimport/working/recurse/mypackage/mymodule__preprocessed__.py", line 23, in <module>
+    raise ultraimport.RewrittenImportError(code_info=('from . import log, other_logger as log2', '/home/ronny/Projects/py/ultraimport/working/recurse/mypackage/mymodule.py', 6, 0), object_to_import='other_logger', combine=[e, e2, e3]) from None
 ultraimport.RewrittenImportError: 
 
 ┌────────────────────────┐
@@ -93,15 +93,15 @@ ultraimport.RewrittenImportError:
 
 A relative import statement was transparently rewritten and failed.
 
-     Original source file │ '/home/ronny/Projects/py/ultraimport/examples/working/recurse/mypackage/mymodule.py', line 6:0
+     Original source file │ '/home/ronny/Projects/py/ultraimport/working/recurse/mypackage/mymodule.py', line 6:0
      Original source code │ from . import log, other_logger as log2
- Preprocessed source file │ '/home/ronny/Projects/py/ultraimport/examples/working/recurse/mypackage/mymodule__preprocessed__.py', line 21
+ Preprocessed source file │ '/home/ronny/Projects/py/ultraimport/working/recurse/mypackage/mymodule__preprocessed__.py', line 21
             Error details │ Could not find resource 'other_logger' in any of the following files:
-                          │ - /home/ronny/Projects/py/ultraimport/examples/working/recurse/mypackage/__init__.py
+                          │ - /home/ronny/Projects/py/ultraimport/working/recurse/mypackage/__init__.py
                           │   (Possible reason: module '__init__' has no attribute 'other_logger')
-                          │ - /home/ronny/Projects/py/ultraimport/examples/working/recurse/mypackage/other_logger/__init__.py
+                          │ - /home/ronny/Projects/py/ultraimport/working/recurse/mypackage/other_logger/__init__.py
                           │   (Possible reason: File does not exist.)
-                          │ - /home/ronny/Projects/py/ultraimport/examples/working/recurse/mypackage/other_logger.py
+                          │ - /home/ronny/Projects/py/ultraimport/working/recurse/mypackage/other_logger.py
                           │   (Possible reason: File does not exist.)
 
  ╲ Check if the required package or module really exists in your file system.

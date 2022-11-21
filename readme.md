@@ -23,9 +23,9 @@ Get control over your imports -- no matter how you run your code.
     - Does not care about \_\_init\_\_.py files
     - Can use relative or absolute pathes
 - Dynamically wrap your code in a virtual namespace package
-- Preprocess code for optimizations (see [example](/examples/working/debug-transform))
-- Recursively rewrite subsequent relative import statements (see [example](/examples/working/recurse))
-- Dependency injection (see [example](/examples/working/dependency-injection))
+- Preprocess code for optimizations (see [example](/examples/debug-transform))
+- Recursively rewrite subsequent relative import statements (see [example](/examples/recurse))
+- Dependency injection (see [example](/examples/dependency-injection))
 - Lazy loading (lazy imports for modules and callables)
 - Fix circular imports through lazy imports or dependency injection
 - Fix the error: `ImportError: attempted relative import with no known parent package`
@@ -60,9 +60,9 @@ pip install -e ./ultraimport
 
 ## Quickstart
 
-Note: You can find this quickstart example and others in the [examples/working/](/examples/working) folder.
+Note: You can find this quickstart example and others in the [examples/](/examples/) folder.
 
-The [quickstart](/examples/working/quickstart/) folder looks like this:
+The [quickstart](/examples/quickstart/) folder looks like this:
 ```
 quickstart
 ├── cherry.py
@@ -77,7 +77,7 @@ quickstart
     └── lemon.py
 ```
 
-The entry point is the script [run.py](/examples/working/quickstart/run/run.py) located in the [quickstart/run](/examples/working/quickstart/run/) folder.
+The entry point is the script [run.py](/examples/quickstart/run/run.py) located in the [quickstart/run](/examples/quickstart/run/) folder.
 If you want, you can directly execute the example script by running:
 ```bash
 python /path/to/quickstart/run/run.py
@@ -94,7 +94,7 @@ This example shows how to import the Python module `cherry.py` from the parent f
 
 ```python
 cherry = ultraimport('__dir__/../cherry.py')
-# <module 'cherry' from '/home/ronny/Projects/py/ultraimport/examples/working/quickstart/cherry.py'>
+# <module 'cherry' from '/home/ronny/Projects/py/ultraimport/examples/quickstart/cherry.py'>
 ```
 
 
@@ -104,7 +104,7 @@ This exmaple show how to import another Python module from a sibling folder.
 
 ```python
 other_cherry = ultraimport('__dir__/../red/cherry.py')
-# <module 'cherry' from '/home/ronny/Projects/py/ultraimport/examples/working/quickstart/red/cherry.py'>
+# <module 'cherry' from '/home/ronny/Projects/py/ultraimport/examples/quickstart/red/cherry.py'>
 ```
 
 
@@ -171,7 +171,7 @@ give our `banana.py` module at least two levels of parent packages by using `pac
 
 ```python
 banana = ultraimport('__dir__/../yellow/banana.py', package=2)
-# <module 'quickstart.yellow.banana' from '/home/ronny/Projects/py/ultraimport/examples/working/quickstart/yellow/banana.py'>
+# <module 'quickstart.yellow.banana' from '/home/ronny/Projects/py/ultraimport/examples/quickstart/yellow/banana.py'>
 ```
 
 
@@ -183,7 +183,7 @@ imported.
 
 ```python
 cherry = ultraimport('__dir__/../red/cherry.py', package='some.fruit')
-# <module 'some.fruit.cherry' from '/home/ronny/Projects/py/ultraimport/examples/working/quickstart/red/cherry.py'>
+# <module 'some.fruit.cherry' from '/home/ronny/Projects/py/ultraimport/examples/quickstart/red/cherry.py'>
 ```
 
 
@@ -211,7 +211,7 @@ For further imports, the package_name `yellow` must be used as provided as the f
 
 ```python
 from yellow import lemon
-# <module 'yellow.lemon' from '/home/ronny/Projects/py/ultraimport/examples/working/quickstart/yellow/lemon.py'>
+# <module 'yellow.lemon' from '/home/ronny/Projects/py/ultraimport/examples/quickstart/yellow/lemon.py'>
 ```
 
 Let's add some other module `cherry.py` from a different directory to our virtual package. After
@@ -261,7 +261,7 @@ Import Python code files from the file system. This is the central main function
 
  - **`add_to_ns`** _(Dict[str, object])_:  add the `objects_to_import` to the dict provided. Usually called with `add_to_ns=locals()` if you want the imported module to be added to the global namespace of the caller.
 
- - **`preprocessor`** _(callable)_:  Takes the source code as an argument and can return a modified version of the source code. Check out the [debug-transform example](/examples/working/debug-transform) on how to use the preprocessor.
+ - **`preprocessor`** _(callable)_:  Takes the source code as an argument and can return a modified version of the source code. Check out the [debug-transform example](/examples/debug-transform) on how to use the preprocessor.
 
  - **`package`** _(str | int)_:  Can have several modes depending on if you provide a string or an integer. If you provide a string, ultraimport will generate one or more namespace packages and use it as parent package of your imported module. If you set an integer, it means the number of path parts (directories) to extract from the `file_path` to calculate the namespace package. This can help with subsequent relative imports in your imported files. If `package` is set to the default `None`, the module will be imported without setting it parent `__package__`.
 
