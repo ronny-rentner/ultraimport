@@ -259,11 +259,13 @@ Import Python code files from the file system. This is the central main function
     - (Iterable[str]): A list of names of objects to import.
     - (Dict[str, object]): The keys represent the names of the objects to import. The values define the expected types of those objects. A `TypeError` is thrown if the types don't match the expectation. If you set `lazy=True`, you must use a dict for `objects_to_import` and define the types.
 
- - **`add_to_ns`** _(Dict[str, object])_:  add the `objects_to_import` to the dict provided. Usually called with `add_to_ns=locals()` if you want the imported module to be added to the global namespace of the caller.
+ - **`add_to_ns`** _(Dict[str, object])_:  add the `objects_to_import` to the dict provided. A common value to use is globals(). If you set `add_to_ns=True`, the imported objects are added to the local scope of the caller.
 
  - **`preprocessor`** _(callable)_:  Takes the source code as an argument and can return a modified version of the source code. Check out the [debug-transform example](/examples/debug-transform) on how to use the preprocessor.
 
- - **`package`** _(str | int)_:  Can have several modes depending on if you provide a string or an integer. If you provide a string, ultraimport will generate one or more namespace packages and use it as parent package of your imported module. If you set an integer, it means the number of path parts (directories) to extract from the `file_path` to calculate the namespace package. This can help with subsequent relative imports in your imported files. If `package` is set to the default `None`, the module will be imported without setting it parent `__package__`.
+ - **`package`** _(str | int)_:  Can have several modes depending on if you provide a string or an integer.
+    - (str) Generate one or more namespace packages and use them as parent package the imported module.
+    - (int) Number of path parts (directories) to extract from the `file_path` to calculate the namespace package. This can help with subsequent relative imports in your imported files. If `package` is set to the default `None`, the module will be imported without setting it parent `__package__`.
 
  - **`use_cache`** _(bool)_:  If set to `False`, allows re-importing of the same source file even if it was imported before. Otherwise a cached version of the imported module is returned.
 
@@ -271,8 +273,7 @@ Import Python code files from the file system. This is the central main function
 
  - **`recurse`** _(bool)_:  If set to `True`, a built-in preprocessor is activated to transparently rewrite all relative import statements (those with a dot like `from . import something`) to ultraimport() calls. Use this mode if you have no control over the source code of the impored modules.
 
- - **`cache_path_prefix`** _(str)_:  Directory for storing preprocessed files. If you use the preprocessor feature or if you use the option `recurse=True` (which in turn uses the preprocessor feature) you will have the option to store the resulting code after preprocessing. By default, they are stored in parallel to the original source code files, but this option allows to override to location. One common setting is `cache_path_prefix='__pycache__'` to store the processed files along with the bytecode files.
- - **`_Note_`**:  Even when you change this directory, this will be hidden from Python. Towards Python, the preprocessed files will always look like they are in the same directory as the original source code files, even if they are not.
+ - **`cache_path_prefix`** _(str)_:  Directory for storing preprocessed files. If you use the preprocessor feature or if you use the option `recurse=True` (which in turn uses the preprocessor feature) you will have the option to store the resulting code after preprocessing. By default, they are stored in parallel to the original source code files, but this option allows to override to location. One common setting is `cache_path_prefix='__pycache__'` to store the processed files along with the bytecode files. **`_Note_`**:  Even when you change this directory, this will be hidden from Python. Towards Python, the preprocessed files will always look like they are in the same directory as the original source code files, even if they are not.
 
 **Returns:**
  Depending on the parameters *returns one of the following*:
