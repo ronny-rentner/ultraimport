@@ -100,7 +100,7 @@ cherry = ultraimport('__dir__/../cherry.py')
 
 ### 2) Import from sibling folder
 
-This exmaple show how to import another Python module from a sibling folder.
+This example shows how to import another Python module from a sibling folder.
 
 ```python
 other_cherry = ultraimport('__dir__/../red/cherry.py')
