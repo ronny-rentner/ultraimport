@@ -21,7 +21,8 @@ Get control over your imports -- no matter how you run your code.
     - Works independent of your top-level package
     - Works no matter if you run your code as a module or as a script
     - Does not care about \_\_init\_\_.py files
-    - Can use relative or absolute pathes
+    - Use relative or absolute pathes
+    - Use relative imports in scripts
 - Dynamically wrap your code in a virtual namespace package
 - Preprocess code for optimizations (see [example](/examples/debug-transform))
 - Recursively rewrite subsequent relative import statements (see [example](/examples/recurse))
@@ -304,7 +305,7 @@ ultraimport is open source, built on open source, and we'd love to have you hang
 
 ## The Issue: Relative Imports in Python
 
-Classically, to do a relative import, your Python script `run.py` would look like this if you wanted to import
+Classically, to do a relative import, a Python script [`run.py`](examples/myprogram/run.py) would look like this if you wanted to import
 the `logger` object from a `logging.py` module in the same directory:
 
 ```python
