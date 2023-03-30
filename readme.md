@@ -175,6 +175,7 @@ banana = ultraimport('__dir__/../yellow/banana.py', package=2)
 # <module 'quickstart.yellow.banana' from '/home/ronny/Projects/py/ultraimport/examples/quickstart/yellow/banana.py'>
 ```
 
+As you can see above, the package was derived from the path automatically according to the package parameter value.
 
 ### 8) Embed module in a virtual namespace package
 
@@ -187,7 +188,6 @@ cherry = ultraimport('__dir__/../red/cherry.py', package='some.fruit')
 # <module 'some.fruit.cherry' from '/home/ronny/Projects/py/ultraimport/examples/quickstart/red/cherry.py'>
 ```
 
-
 ### 9) Integrate with normal imports
 
 After creating the `fruit` namespace package as a side effect of the import, you can use it to do classical imports.
@@ -197,7 +197,6 @@ Remember that the `fruit` package points to the directory `red`.
 from some.fruit.strawberry import Strawberry
 # <class 'some.fruit.strawberry.Strawberry'>
 ```
-
 
 ### 10) Create virtual namespace package
 
