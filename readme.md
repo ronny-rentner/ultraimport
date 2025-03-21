@@ -2,8 +2,6 @@
 
 Get control over your imports -- no matter how you run your code.
 
-**Warning: This is an early hack. There are only few unit tests, yet. Maybe not stable!**
-
 [Overview](#overview) | [Installation](#installation) | [Quickstart](#quickstart) | [Documentation](#documentation)
 
 [![PyPI Package](https://img.shields.io/pypi/v/ultradict.svg)](https://pypi.org/project/ultraimport)
