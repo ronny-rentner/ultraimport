@@ -108,6 +108,44 @@ A relative import statement was transparently rewritten and failed.
  ╱ If you know the path but cannot change the import statement, use dependency injection to inject the resource.
 ```
 
-In the error details, we see that the resource 'other_logger' cannot be found and we also see a list of files that Python has searched. We could now check where this other_logger actually is.
+In the error details, we see that the resource 'other_logger' cannot be found and we also see a list of files that Python has searched. The error message suggests using dependency injection as a solution.
+
+## Solution using dependency injection
+
+Let's solve this by using ultraimport's dependency injection capability to provide the missing 'other_logger' module:
+
+```python
+import ultraimport
+
+# Create a mock class to substitute for the missing 'other_logger' module
+# Based on the import statement "from . import log, other_logger as log2",
+# we need to provide an object that can be accessed as log2
+class MockOtherLogger:
+    # We need to match whatever functionality 'other_logger' is expected to have
+    def __str__(self):
+        return "MockOtherLogger instance"
+        
+    # Add any methods or attributes that the real other_logger would have
+    # For example, if it's used as a logger, it might need a log function:
+    def log(self, message):
+        return f"[MOCK LOGGER] {message}"
+
+# Import the module with the missing dependency injected
+mymodule = ultraimport('__dir__/working/recurse/mypackage/mymodule.py', 
+                      recurse=True,
+                      inject={'other_logger': MockOtherLogger()})
+
+# Now the import succeeds because we've injected the dependency
+# And the module will be able to use the injected other_logger as log2
+```
+
+Dependency injection is a powerful technique that allows you to:
+1. Supply missing modules or objects when you can't modify the original code
+2. Mock dependencies for testing purposes
+3. Override behavior of imported modules without changing their source
+
+The `inject` parameter of ultraimport takes a dictionary where keys are the names that will be available inside the imported module, and values are the actual objects to inject.
+
+You can also fix this example by creating the missing file in the expected location or by modifying the import statement in the original code if you have access to it, but dependency injection gives you a solution even when you can't modify the source files.
 
 
