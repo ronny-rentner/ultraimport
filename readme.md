@@ -2,7 +2,7 @@
 
 Get control over your imports -- no matter how you run your code.
 
-[Overview](#overview) | [Installation](#installation) | [Quickstart](#quickstart) | [Documentation](#documentation)
+[Overview](#overview) | [Installation](#installation) | [Quickstart](#quickstart) | [Examples](./examples/) | [Documentation](#documentation)
 
 [![PyPI Package](https://img.shields.io/pypi/v/ultradict.svg)](https://pypi.org/project/ultraimport)
 [![Run Tests](https://github.com/ronny-rentner/ultraimport/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/ronny-rentner/ultraimport/actions/workflows/ci.yml)
@@ -26,6 +26,7 @@ Get control over your imports -- no matter how you run your code.
 - Recursively rewrite subsequent relative import statements (see [example](/examples/recurse))
 - Dependency injection (see [example](/examples/dependency-injection))
 - Lazy loading (lazy imports for modules and callables)
+- Make imports work in code you cannot modify (e.g., auto-generated files, legacy code)
 - Fix circular imports through lazy imports or dependency injection
 - Fix the error: `ImportError: attempted relative import with no known parent package`
 - Fix the error: `ValueError: attempted relative import beyond top-level package`
