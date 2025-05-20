@@ -30,19 +30,12 @@ except:
 
 __all__ = ['ultraimport']
 
-# Needed for code transformation
-if not hasattr(ast, 'unparse'):
-    import astor
-    ast.unparse = astor.to_source
-
 # Needed for debug output
 try: import astprettier
 except: pass
 
 # Keep track of reload count
-""" Keep track """
 reload_counter = 0
-""" Keep track """
 
 # Dict of loaded files, the keys are tuples of two
 # input parameters of the ultraimport() function: file_path and the package parameter
