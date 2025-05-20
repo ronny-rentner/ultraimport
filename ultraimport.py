@@ -228,6 +228,8 @@ def ultraimport(file_path, objects_to_import=None, add_to_ns=None, preprocessor=
 
             loader = Loader(full_name, file_path, preprocessor=preprocessor_combined, use_cache=use_preprocessor_cache, cache_path_prefix=cache_path_prefix)
             spec = importlib.util.spec_from_loader(full_name, loader)
+            spec.origin = file_path
+            spec.has_location = True
 
             module = importlib.util.module_from_spec(spec)
 
@@ -237,7 +239,9 @@ def ultraimport(file_path, objects_to_import=None, add_to_ns=None, preprocessor=
             # Inject other dependencies
             if inject:
                 for k, v in inject.items():
-                    setattr(module, k, v)
+                    # We skip all internal keys with double underscore
+                    if not k.startswith('__'):
+                        setattr(module, k, v)
 
             #print('__package__', package_name)
             #print('__path__', package_path)
