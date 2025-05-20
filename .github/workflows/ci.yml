@@ -6,82 +6,13 @@ on:
 
 jobs:
   build:
-    name: Build on ${{ matrix.config.os }}, ${{ matrix.config.arch }}, ${{ matrix.python-version }}
-    runs-on: ${{ matrix.config.os }}
+    name: Build on ${{ matrix.os }} • Python ${{ matrix.python-version }}
+    runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
-        config:
-          - name: "win32-x86"
-            os: windows-2019
-            arch: x86
-          - name: "win32-amd64"
-            os: windows-2019
-            arch: AMD64
-          - name: "win32-x86__2022"
-            os: windows-2022
-            arch: x86
-          - name: "win32-amd64__2022"
-            os: windows-2022
-            arch: AMD64
-
-          - name: "macos11-x84_64"
-            os: macos-11
-            arch: x86_64
-          - name: "macos11-universal2"
-            os: macos-11
-            arch: universal2
-          - name: "macos12-x84_64"
-            os: macos-12
-            arch: x86_64
-          - name: "macos12-universal2"
-            os: macos-12
-            arch: universal2
-
-          - name: "linux-i386"
-            os: ubuntu-20.04
-            arch: i686
-            platform: i386
-          - name: "linux-x86_64"
-            os: ubuntu-20.04
-            arch: x86_64
-            platform: x86_64
-          - name: "linux-aarch64"
-            os: ubuntu-20.04
-            arch: aarch64
-            platform: aarch64
-          - name: "linux-ppc64le"
-            os: ubuntu-20.04
-            arch: ppc64le
-            platform: ppc64le
-          - name: "linux-s390x"
-            os: ubuntu-20.04
-            arch: s390x
-            platform: s390x
-
-          - name: "linux-i386__22.04"
-            os: ubuntu-22.04
-            arch: i686
-            platform: i386
-          - name: "linux-x86_64__22.04"
-            os: ubuntu-22.04
-            arch: x86_64
-            platform: x86_64
-          - name: "linux-aarch64__22.04"
-            os: ubuntu-22.04
-            arch: aarch64
-            platform: aarch64
-          - name: "linux-ppc64le__22.04"
-            os: ubuntu-22.04
-            arch: ppc64le
-            platform: ppc64le
-          - name: "linux-s390x__22.04"
-            os: ubuntu-22.04
-            arch: s390x
-            platform: s390x
-
-        # Run in all these versions of Python
-        python-version: ["3.7", "3.8", "3.9", "3.10", "3.11"]
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        python-version: ["3.8", "3.9", "3.10", "3.11", "3.12"]
     steps:
       - uses: actions/checkout@v3
       - name: Install Python ${{ matrix.python-version }}
