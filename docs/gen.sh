@@ -1,14 +1,14 @@
 #!/bin/bash
 
 cd `dirname $0`/..
-lazydocs \
+pipx run lazydocs \
 	--output-path="./docs" \
 	--overview-file="readme.md" \
 	--src-base-url="https://github.com/ronny-rentner/ultraimport/blob/main/" \
 	--no-watermark \
 	--no-remove-package-prefix \
 	--ignored-modules="setup" \
-	.
+	./ultraimport.py
 
 # Postprocess: Remove duplicate emtpy lines
 sed -i -z 's/\n\n\n\+/\n\n/g' docs/readme.md
