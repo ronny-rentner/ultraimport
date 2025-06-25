@@ -30,10 +30,6 @@ except:
 
 __all__ = ['ultraimport']
 
-# Needed for debug output
-try: import astprettier
-except: pass
-
 # Keep track of reload count
 reload_counter = 0
 
@@ -47,6 +43,10 @@ import_ongoing_stack = {}
 # Print debug output, especially for code transformation
 debug = False
 #debug = True
+
+if debug:
+    # Only needed for debug output when using the rewrite/recurse feature
+    import astprettier
 
 def ultraimport(file_path, objects_to_import=None, add_to_ns=None, preprocessor=None, package=None, caller=None, caller_reference=None,
                 use_cache=True, lazy=False, recurse=False, inject=None, use_preprocessor_cache=True, cache_path_prefix=None):
@@ -890,6 +890,10 @@ class RewriteImport(ast.NodeTransformer):
 ##########
 # HELPER #
 ##########
+
+def search_module_path(module):
+    spec = importlib.util.find_spec(module)
+    return os.path.dirname(spec.origin)
 
 def get_module_name(file_path):
     """
