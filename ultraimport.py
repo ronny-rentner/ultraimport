@@ -893,7 +893,10 @@ class RewriteImport(ast.NodeTransformer):
 
 def search_module_path(module):
     spec = importlib.util.find_spec(module)
-    return os.path.dirname(spec.origin)
+    if spec and hasattr('origin', spec):
+        return os.path.dirname(spec.origin)
+
+    raise Exception(f'Module "{module}" not found')
 
 def get_module_name(file_path):
     """
