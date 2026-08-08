@@ -9,7 +9,7 @@ name = "ultraimport"
 description='Get control over your imports -- no matter how you run your code.'
 readme = "readme.md"
 license-files = ["license.txt"]
-version = "0.1.1"
+version = "0.1.2"
 dependencies= []
 requires-python = '>=3.9'
 

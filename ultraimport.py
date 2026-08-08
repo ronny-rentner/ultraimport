@@ -21,12 +21,27 @@
 import importlib, importlib.machinery, importlib.util
 import ast, collections, contextlib, inspect, os, pathlib, sys, types, traceback, time
 
-# If possible, let's print nice exceptions via rich
-try:
-    from rich.traceback import install
-    install(show_locals=False)
-except:
-    pass
+# Explicit ultraimport overrides win over terminal heuristics.
+FORCE_COLORS = os.environ.get('ULTRAIMPORT_COLORS', '').lower() in {'1', 'true', 'yes', 'on'}
+FORCE_PLAIN_TEXT = os.environ.get('ULTRAIMPORT_PLAIN', '').lower() in {'1', 'true', 'yes', 'on'}
+
+# Plain mode follows the same broad style many CLIs use unless colors are explicitly forced.
+PLAIN_TEXT_MODE = not FORCE_COLORS and (
+    FORCE_PLAIN_TEXT
+    or 'NO_COLOR' in os.environ
+    or os.environ.get('TERM') == 'dumb'
+    or not sys.stdout.isatty()
+    or not sys.stderr.isatty()
+)
+
+# If possible, let's print nice exceptions via rich. Rich tracebacks are colored and
+# boxed, so plain mode keeps the stock Python traceback instead.
+if not PLAIN_TEXT_MODE:
+    try:
+        from rich.traceback import install
+        install(show_locals=False)
+    except:
+        pass
 
 __all__ = ['ultraimport']
 
