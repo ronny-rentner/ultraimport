@@ -30,8 +30,8 @@ PLAIN_TEXT_MODE = not FORCE_COLORS and (
     FORCE_PLAIN_TEXT
     or 'NO_COLOR' in os.environ
     or os.environ.get('TERM') == 'dumb'
-    or not sys.stdout.isatty()
-    or not sys.stderr.isatty()
+    or sys.stdout is None or not sys.stdout.isatty()
+    or sys.stderr is None or not sys.stderr.isatty()
 )
 
 # If possible, let's print nice exceptions via rich. Rich tracebacks are colored and
