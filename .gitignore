@@ -23,6 +23,7 @@ downloads/
 eggs/
 .eggs/
 wheels/
+wheelhouse/
 pip-wheel-metadata/
 share/python-wheels/
 *.egg-info/
