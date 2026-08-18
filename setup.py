@@ -2,7 +2,9 @@ from pathlib import Path
 from setuptools import setup, Extension
 import Cython.Build
 
-ext = Extension(name="ultraimport", sources=["ultraimport.py"])
+# Build as a submodule of the `ultraimport` package: a top-level extension is shadowed by the
+# package directory, while inside it the .so takes precedence over the sibling ultraimport.py.
+ext = Extension(name="ultraimport.ultraimport", sources=["ultraimport.py"])
 
 setup(
     name='ultraimport',
