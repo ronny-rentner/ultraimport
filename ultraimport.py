@@ -38,8 +38,12 @@ PLAIN_TEXT_MODE = not FORCE_COLORS and (
 # boxed, so plain mode keeps the stock Python traceback instead.
 if not PLAIN_TEXT_MODE:
     try:
+        from rich.console import Console
         from rich.traceback import install
-        install(show_locals=False)
+        # Rich runs its own tty detection on the console it renders to, so forcing colors means
+        # overriding that detection; None leaves it to rich. Console(stderr=True) is what
+        # install() builds by default, tracebacks go to stderr.
+        install(show_locals=False, console=Console(stderr=True, force_terminal=FORCE_COLORS or None))
     except:
         pass
 
