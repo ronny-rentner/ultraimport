@@ -1089,4 +1089,5 @@ class CallableModule(types.ModuleType):
         return ultraimport(*args, **kwargs)
 
 sys.modules[__name__].__class__ = CallableModule
-__path__ = os.path.dirname(__file__)
+# Must be a list, importlib iterates it as a search path when reloading the package submodule
+__path__ = [os.path.dirname(__file__)]

@@ -13,7 +13,7 @@ version = "0.1.2"
 dependencies= []
 requires-python = '>=3.9'
 
-[[authors]]
+[[project.authors]]
 name = "Ronny Rentner"
 email = "ultraimport.code@ronny-rentner.de"
 
@@ -28,3 +28,10 @@ include-package-data = false
 packages = ["ultraimport"]
 [tool.setuptools.package-dir]
 ultraimport = "."
+
+[tool.cibuildwheel]
+# 3.15 is still a release candidate and not in the test matrix, drop this once it is final.
+# Free-threaded builds are skipped as the extension does not declare free-threading support, so
+# Python re-enables the GIL with a warning on import.
+skip = ["cp315*", "cp3*t-*"]
+test-command = "python {project}/tests/tests.py"

@@ -2,8 +2,8 @@
 
 import unittest, subprocess, sys, os, tempfile, pathlib
 
-# So we can find ultraimport without installing it
-sys.path.insert(0, f"{os.path.dirname(__file__)}{os.sep}..{os.sep}..{os.sep}")
+# So we can find ultraimport without installing it, but an installed ultraimport (e.g. a wheel under test) wins
+sys.path.append(f"{os.path.dirname(__file__)}{os.sep}..{os.sep}..{os.sep}")
 
 import ultraimport
 
@@ -16,7 +16,9 @@ class ultraimportTests(unittest.TestCase):
     def exec(self, file_path):
         env = os.environ.copy()
         file_path = f"{os.path.dirname(__file__)}{os.sep}..{os.sep}{file_path}"
-        env["PYTHONPATH"] = os.path.dirname(__file__) + os.path.sep + '../'
+        # Only expose the source tree to the example scripts when the tests themselves run from it
+        if os.path.dirname(os.path.abspath(ultraimport.__file__)) == os.path.abspath(f"{os.path.dirname(__file__)}{os.sep}.."):
+            env["PYTHONPATH"] = os.path.dirname(__file__) + os.path.sep + '../'
         ret = subprocess.run([sys.executable, file_path],
                 stdout=subprocess.PIPE, stderr=subprocess.STDOUT, env=env)
         ret.stdout = ret.stdout.replace(b'\r\n', b'\n');
